@@ -10,7 +10,7 @@ Open `Kids Learning Game - 2026-06-04.html` in any phone or desktop browser. No 
 
 - **Two levels**, switched with the top toggle: **Owen** (younger, ~2.5) and **Lucas** (older, ~4.5).
   - On the home screen the toggle is a single tap; **inside a game it requires a press-and-hold** so a kid can't flip it mid-session by accident.
-- **Categories:** Numbers, Colors, Shapes, Animals, Dinos (plus **Letters** and **Patterns**, which appear for Lucas only).
+- **Categories:** Numbers, Colors, Shapes, Animals, Dinos, Disney (plus **Letters** and **Patterns**, which appear for Lucas only).
 - Every prompt is **spoken aloud** (Web Speech API) — no reading required except single letters.
 - **Real animal-sound recordings** play on the "who says this?" question and as a reward for a correct tap.
 - Dinosaurs are hand-built inline SVG illustrations; feedback chimes are generated with the Web Audio API. No external asset files.
@@ -25,8 +25,11 @@ Open `Kids Learning Game - 2026-06-04.html` in any phone or desktop browser. No 
 | Letters | — | letter find, phonics, upper/lowercase |
 | Animals | find the animal | who says this? / farm animal |
 | Dinos | find the dinosaur (3 choices) | find the dinosaur (4 choices) |
+| Disney | find the character (3 choices) | find the character (4 choices) |
 | Patterns | — | complete the repeating pattern |
 
 ## Credits
 
 Animal sounds are sourced from Wikimedia Commons under CC0 / CC BY / CC BY-SA licenses. Per-sound attribution is in a comment block at the bottom of the HTML file.
+
+The Disney category uses simplified, original inline-SVG renditions of well-known characters (the same hand-built vector approach as the dinosaurs) — no copyrighted image files are bundled. It's intended for personal, offline, educational play at home.

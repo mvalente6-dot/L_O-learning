@@ -225,7 +225,7 @@
 <!-- START GATE (unlocks audio on first tap) -->
 <div id="start">
   <h1>🦖 Play &amp; Learn 🎨</h1>
-  <div class="sub">Numbers • Colors • Shapes • Letters • Animals • Dinos</div>
+  <div class="sub">Numbers • Colors • Shapes • Letters • Animals • Dinos • Disney</div>
   <button class="start-btn" id="startBtn">▶️ Start</button>
 </div>
 
@@ -434,6 +434,121 @@ const DINOS = [
     <polygon points="100,52 102,56 104,52" fill="#fff"/>
     <polygon points="105,51 107,55 109,51" fill="#fff"/>
     <circle cx="99" cy="44" r="2.2" fill="#3f2d04"/><circle cx="99.8" cy="43.2" r="0.7" fill="#fff"/>`}
+];
+
+/* curated cartoon characters — simplified, original flat-vector renditions
+   (viewBox 0 0 100 100). Hand-built from layered shapes so no copyrighted
+   image files are embedded; kids tap the character they hear named. */
+const DISNEY = [
+  {name:'Mickey Mouse', spoken:'Mickey Mouse', svg:`
+    <circle cx="24" cy="26" r="17" fill="#1a1a1a"/>
+    <circle cx="76" cy="26" r="17" fill="#1a1a1a"/>
+    <ellipse cx="50" cy="58" rx="31" ry="30" fill="#1a1a1a"/>
+    <path d="M28 66 Q50 96 72 66 Q72 84 50 86 Q28 84 28 66 Z" fill="#f6c9a4"/>
+    <ellipse cx="50" cy="71" rx="22" ry="15" fill="#f6c9a4"/>
+    <ellipse cx="50" cy="67" rx="7" ry="5.5" fill="#1a1a1a"/>
+    <path d="M35 72 Q50 87 65 72" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <ellipse cx="43" cy="50" rx="5.5" ry="9" fill="#fff"/>
+    <ellipse cx="57" cy="50" rx="5.5" ry="9" fill="#fff"/>
+    <ellipse cx="44" cy="52" rx="2.2" ry="4" fill="#1a1a1a"/>
+    <ellipse cx="56" cy="52" rx="2.2" ry="4" fill="#1a1a1a"/>`},
+
+  {name:'Minnie Mouse', spoken:'Minnie Mouse', svg:`
+    <circle cx="24" cy="28" r="17" fill="#1a1a1a"/>
+    <circle cx="76" cy="28" r="17" fill="#1a1a1a"/>
+    <path d="M50 16 L28 4 Q21 16 28 27 Z" fill="#e11d48"/>
+    <path d="M50 16 L72 4 Q79 16 72 27 Z" fill="#e11d48"/>
+    <circle cx="50" cy="16" r="5.5" fill="#e11d48"/>
+    <circle cx="34" cy="12" r="2" fill="#fff"/><circle cx="40" cy="20" r="2" fill="#fff"/>
+    <circle cx="66" cy="12" r="2" fill="#fff"/><circle cx="60" cy="20" r="2" fill="#fff"/>
+    <ellipse cx="50" cy="60" rx="31" ry="30" fill="#1a1a1a"/>
+    <path d="M28 68 Q50 97 72 68 Q72 85 50 87 Q28 85 28 68 Z" fill="#f6c9a4"/>
+    <ellipse cx="50" cy="73" rx="22" ry="15" fill="#f6c9a4"/>
+    <ellipse cx="50" cy="69" rx="7" ry="5.5" fill="#1a1a1a"/>
+    <path d="M35 74 Q50 89 65 74" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <ellipse cx="43" cy="52" rx="5.5" ry="9" fill="#fff"/>
+    <ellipse cx="57" cy="52" rx="5.5" ry="9" fill="#fff"/>
+    <ellipse cx="44" cy="54" rx="2.2" ry="4" fill="#1a1a1a"/>
+    <ellipse cx="56" cy="54" rx="2.2" ry="4" fill="#1a1a1a"/>
+    <path d="M36 44 Q40 41 45 43 M55 43 Q60 41 64 44" stroke="#1a1a1a" stroke-width="2" fill="none" stroke-linecap="round"/>`},
+
+  {name:'Winnie the Pooh', spoken:'Winnie the Pooh', svg:`
+    <circle cx="27" cy="27" r="12" fill="#efa72c"/>
+    <circle cx="73" cy="27" r="12" fill="#efa72c"/>
+    <path d="M28 78 Q50 92 72 78 L72 98 L28 98 Z" fill="#d8392b"/>
+    <ellipse cx="50" cy="50" rx="31" ry="30" fill="#f4b62d"/>
+    <ellipse cx="50" cy="63" rx="18" ry="14" fill="#f8cd63"/>
+    <ellipse cx="50" cy="56" rx="5.5" ry="4.2" fill="#1a1a1a"/>
+    <path d="M50 60 L50 67 M50 67 Q44 71 40 68 M50 67 Q56 71 60 68" stroke="#7a4a12" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <circle cx="40" cy="45" r="2.8" fill="#1a1a1a"/>
+    <circle cx="60" cy="45" r="2.8" fill="#1a1a1a"/>
+    <path d="M34 38 Q40 35 45 38 M55 38 Q60 35 66 38" stroke="#a9741a" stroke-width="1.6" fill="none" stroke-linecap="round"/>`},
+
+  {name:'Olaf', spoken:'Olaf the snowman', svg:`
+    <path d="M40 8 Q43 1 47 9 M50 5 Q53 -1 57 7 M58 9 Q63 4 66 12" stroke="#5a4631" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="50" cy="52" rx="27" ry="29" fill="#fdfdfd" stroke="#dbe4ea" stroke-width="1.5"/>
+    <ellipse cx="42" cy="42" rx="8" ry="9.5" fill="#fff" stroke="#cdd7de" stroke-width="1"/>
+    <ellipse cx="58" cy="42" rx="8" ry="9.5" fill="#fff" stroke="#cdd7de" stroke-width="1"/>
+    <circle cx="44" cy="44" r="3" fill="#1a1a1a"/>
+    <circle cx="56" cy="44" r="3" fill="#1a1a1a"/>
+    <path d="M35 31 Q41 28 47 31 M53 31 Q59 28 65 31" stroke="#6b4a23" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M50 50 L80 54 L50 58 Z" fill="#f97316"/>
+    <path d="M37 64 Q50 76 63 64" stroke="#1a1a1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <rect x="46" y="64" width="7" height="9" rx="2" fill="#fff" stroke="#cdd7de" stroke-width="1"/>`},
+
+  {name:'Mike', spoken:'Mike the green monster', svg:`
+    <path d="M34 22 Q33 13 38 11 Q40 17 42 24 Z" fill="#6aa033"/>
+    <path d="M66 22 Q67 13 62 11 Q60 17 58 24 Z" fill="#6aa033"/>
+    <rect x="18" y="58" width="11" height="5" rx="2.5" fill="#86c440"/>
+    <rect x="71" y="58" width="11" height="5" rx="2.5" fill="#86c440"/>
+    <rect x="36" y="84" width="11" height="6" rx="3" fill="#86c440"/>
+    <rect x="53" y="84" width="11" height="6" rx="3" fill="#86c440"/>
+    <ellipse cx="50" cy="52" rx="32" ry="31" fill="#86c440"/>
+    <path d="M36 36 Q50 28 64 36" stroke="#5b8c2a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <circle cx="50" cy="46" r="17" fill="#fff"/>
+    <circle cx="50" cy="48" r="7" fill="#5b8c2a"/>
+    <circle cx="50" cy="48" r="3.5" fill="#1a1a1a"/>
+    <circle cx="52" cy="46" r="1.4" fill="#fff"/>
+    <path d="M34 66 Q50 80 66 66 Z" fill="#5a3520"/>
+    <path d="M34 66 Q50 71 66 66 Z" fill="#fff"/>`},
+
+  {name:'Nemo', spoken:'Nemo the clownfish', svg:`
+    <path d="M72 52 L98 34 Q91 52 98 70 Z" fill="#f97316"/>
+    <path d="M38 30 Q48 16 60 28 Q50 30 42 33 Z" fill="#f97316"/>
+    <path d="M38 74 Q48 88 58 76 Q50 74 42 71 Z" fill="#f97316"/>
+    <ellipse cx="44" cy="52" rx="34" ry="23" fill="#fb8b3d"/>
+    <path d="M22 35 Q15 52 22 69 Q31 64 31 52 Q31 40 22 35 Z" fill="#fff" stroke="#1a1a1a" stroke-width="1.4"/>
+    <path d="M48 32 Q40 52 48 72 Q59 67 59 52 Q59 37 48 32 Z" fill="#fff" stroke="#1a1a1a" stroke-width="1.4"/>
+    <circle cx="20" cy="47" r="5.5" fill="#fff"/>
+    <circle cx="19" cy="47" r="3" fill="#1a1a1a"/>
+    <path d="M14 58 Q20 62 26 59" stroke="#1a1a1a" stroke-width="1.6" fill="none" stroke-linecap="round"/>`},
+
+  {name:'Stitch', spoken:'Stitch', svg:`
+    <path d="M26 42 Q9 18 13 42 Q15 56 31 55 Z" fill="#3f97d6"/>
+    <path d="M74 42 Q91 18 87 42 Q85 56 69 55 Z" fill="#3f97d6"/>
+    <path d="M21 30 Q12 24 16 38 Z" fill="#ec9ec0"/>
+    <path d="M79 30 Q88 24 84 38 Z" fill="#ec9ec0"/>
+    <ellipse cx="50" cy="58" rx="28" ry="26" fill="#4aa6e0"/>
+    <ellipse cx="50" cy="67" rx="18" ry="13" fill="#bfe3f7"/>
+    <ellipse cx="40" cy="50" rx="8" ry="10" fill="#1a1a1a"/>
+    <ellipse cx="60" cy="50" rx="8" ry="10" fill="#1a1a1a"/>
+    <circle cx="42" cy="47" r="2.6" fill="#fff"/>
+    <circle cx="62" cy="47" r="2.6" fill="#fff"/>
+    <ellipse cx="50" cy="61" rx="5" ry="3.6" fill="#33292a"/>
+    <path d="M39 66 Q50 76 61 66" stroke="#33292a" stroke-width="2.5" fill="none" stroke-linecap="round"/>`},
+
+  {name:'Pluto', spoken:'Pluto the dog', svg:`
+    <path d="M30 30 Q13 40 18 65 Q29 60 35 44 Z" fill="#1a1a1a"/>
+    <path d="M70 30 Q87 40 82 65 Q71 60 65 44 Z" fill="#1a1a1a"/>
+    <ellipse cx="50" cy="44" rx="25" ry="23" fill="#f2a900"/>
+    <ellipse cx="50" cy="62" rx="20" ry="16" fill="#f8c33f"/>
+    <ellipse cx="50" cy="55" rx="7" ry="5.5" fill="#1a1a1a"/>
+    <path d="M50 60 L50 67 M50 67 Q44 71 40 69 M50 67 Q56 71 60 69" stroke="#9a6a10" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="42" cy="38" rx="4" ry="5.2" fill="#fff"/>
+    <ellipse cx="58" cy="38" rx="4" ry="5.2" fill="#fff"/>
+    <circle cx="42" cy="39" r="2" fill="#1a1a1a"/>
+    <circle cx="58" cy="39" r="2" fill="#1a1a1a"/>
+    <path d="M30 66 Q50 80 70 66" stroke="#16a34a" stroke-width="6" fill="none"/>`}
 ];
 
 /* animals: emoji + spoken sound */
@@ -651,6 +766,19 @@ const CATS = {
     }
   },
 
+  disney: {
+    label:'Disney', icon:'🏰', color:'#8b5cf6',
+    build(){
+      const n = numChoiceCount();              // Owen: 3 characters, Lucas: 4 characters
+      const set = sample(DISNEY, Math.min(n, DISNEY.length));
+      const target = pick(set);
+      return {
+        say:`Find ${target.spoken}.`,
+        choices: set.map(d => ({ render:charTile(d), correct:d.name===target.name }))
+      };
+    }
+  },
+
   patterns: {
     label:'Patterns', icon:'🟥', color:'#ec4899', lucasOnly:true,   // sequencing — 4.5 only
     build(){
@@ -678,6 +806,7 @@ function emojiTile(e){ return `<span class="emoji">${e}</span>`; }
 function letterTile(L){ return `<span class="letter">${L}</span>`; }
 function numTile(nv){ return `<span class="num">${nv}</span>`; }
 function dinoTile(d){ return `<svg viewBox="0 0 120 100">${d.svg}</svg>`; }
+function charTile(c){ return `<svg viewBox="0 0 100 100">${c.svg}</svg>`; }
 function numChoices(opts, answer){ return opts.map(v => ({ render:numTile(v), correct:v===answer })); }
 function patternRound(seq, opts, answer){
   return {
