@@ -1,0 +1,6 @@
+# Personal builds and user-supplied character art — never commit these.
+# The repo ships code only; images live locally and are baked into a
+# personal HTML build that you transfer to the phone.
+Kids Learning Game - personal.html
+build_tools/images/*
+!build_tools/images/README.md

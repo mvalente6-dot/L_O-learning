@@ -147,6 +147,7 @@
   .choice .num{font-size:min(28vw,140px); font-weight:bold; line-height:1;}
   .choice .letter{font-size:min(28vw,140px); font-weight:bold; line-height:1; font-family:'Trebuchet MS',sans-serif;}
   .choice svg{max-width:90%; max-height:90%;}
+  .choice .photo{max-width:100%; max-height:100%; object-fit:contain; border-radius:14px;}
   .choice.correct{animation:pop .5s; background:#dcfce7;}
   .choice.wrong{animation:shake .4s; background:#ffedd5;}
   @keyframes pop{0%{transform:scale(1);}40%{transform:scale(1.12);}100%{transform:scale(1);}}
@@ -436,6 +437,54 @@ const DINOS = [
     <circle cx="99" cy="44" r="2.2" fill="#3f2d04"/><circle cx="99.8" cy="43.2" r="0.7" fill="#fff"/>`}
 ];
 
+/* Disney characters.
+   This file ships with NO character images, so the Disney category stays
+   hidden until you build a personal copy. Drop image files you have the
+   rights to into build_tools/images/ and run build_tools/embed.py — it bakes
+   them (base64) into the DISNEY_PHOTOS map below in a personal HTML build you
+   keep off the repo and copy to the phone. See build_tools/NOTES.md.
+   DISNEY_META is the roster (name + movie groups); a character appears only
+   once its photo is present, so partial image sets work fine. */
+const DISNEY_META = [
+  {key:'mickey',  name:'Mickey Mouse',      groups:['classic']},
+  {key:'minnie',  name:'Minnie Mouse',      groups:['classic']},
+  {key:'donald',  name:'Donald Duck',       groups:['classic']},
+  {key:'goofy',   name:'Goofy',             groups:['classic']},
+  {key:'pluto',   name:'Pluto',             groups:['classic']},
+  {key:'simba',   name:'Simba',             groups:['lionking']},
+  {key:'nala',    name:'Nala',              groups:['lionking']},
+  {key:'pumbaa',  name:'Pumbaa',            groups:['lionking']},
+  {key:'timon',   name:'Timon',             groups:['lionking']},
+  {key:'rafiki',  name:'Rafiki',            groups:['lionking']},
+  {key:'elsa',    name:'Elsa',              groups:['frozen','princess']},
+  {key:'anna',    name:'Anna',              groups:['frozen','princess']},
+  {key:'olaf',    name:'Olaf',              groups:['frozen']},
+  {key:'woody',   name:'Woody',             groups:['toystory']},
+  {key:'buzz',    name:'Buzz Lightyear',    groups:['toystory']},
+  {key:'jessie',  name:'Jessie',            groups:['toystory']},
+  {key:'mcqueen', name:'Lightning McQueen', groups:['cars']},
+  {key:'mater',   name:'Mater',             groups:['cars']},
+  {key:'mike',    name:'Mike Wazowski',     groups:['monsters']},
+  {key:'sulley',  name:'Sulley',            groups:['monsters']},
+  {key:'nemo',    name:'Nemo',              groups:['nemo']},
+  {key:'dory',    name:'Dory',              groups:['nemo']},
+  {key:'stitch',  name:'Stitch',            groups:['stitch']},
+  {key:'walle',   name:'WALL-E',            groups:['walle']},
+  {key:'moana',   name:'Moana',             groups:['moana','princess']}
+];
+/* movie groups asked about in Lucas grouping rounds -> spoken name */
+const DISNEY_GROUP_Q = {
+  frozen:'Frozen', toystory:'Toy Story', cars:'Cars',
+  lionking:'the Lion King', monsters:'Monsters, Inc.', nemo:'Finding Nemo'
+};
+/* === DISNEY_PHOTOS_START (build_tools/embed.py replaces this block) === */
+const DISNEY_PHOTOS = {};
+/* === DISNEY_PHOTOS_END === */
+/* only characters whose photo has been embedded are playable */
+const DISNEY = DISNEY_META
+  .filter(c => DISNEY_PHOTOS[c.key])
+  .map(c => Object.assign({}, c, {photo: DISNEY_PHOTOS[c.key]}));
+
 /* animals: emoji + spoken sound */
 const ANIMALS = [
   {name:'dog',emoji:'🐶',sound:'woof woof'},{name:'cat',emoji:'🐱',sound:'meow'},
@@ -651,6 +700,20 @@ const CATS = {
     }
   },
 
+  disney: {
+    label:'Disney', icon:'🏰', color:'#d946ef',
+    available: () => DISNEY.length >= 3,    // hidden until you embed images
+    build(){
+      const n = numChoiceCount();
+      // Lucas sometimes gets a "Who is from <movie>?" grouping round
+      if (state.level === 'complex' && rand(2) === 0){
+        const r = disneyGroupRound(n);
+        if (r) return r;
+      }
+      return disneyNameRound(n);            // Owen + default: name recognition
+    }
+  },
+
   patterns: {
     label:'Patterns', icon:'🟥', color:'#ec4899', lucasOnly:true,   // sequencing — 4.5 only
     build(){
@@ -678,6 +741,32 @@ function emojiTile(e){ return `<span class="emoji">${e}</span>`; }
 function letterTile(L){ return `<span class="letter">${L}</span>`; }
 function numTile(nv){ return `<span class="num">${nv}</span>`; }
 function dinoTile(d){ return `<svg viewBox="0 0 120 100">${d.svg}</svg>`; }
+function photoTile(c){ return `<img class="photo" src="${c.photo}" alt="">`; }
+function disneyNameRound(n){
+  const set = sample(DISNEY, Math.min(n, DISNEY.length));
+  const target = pick(set);
+  return {
+    say:`Find ${target.name}.`,
+    choices: set.map(c => ({ render:photoTile(c), correct:c.name===target.name }))
+  };
+}
+function disneyGroupRound(n){
+  // a usable group needs >=1 in-group character and enough out-group distractors
+  const groups = Object.keys(DISNEY_GROUP_Q).filter(g => {
+    const ins  = DISNEY.filter(c => c.groups.includes(g));
+    const outs = DISNEY.filter(c => !c.groups.includes(g));
+    return ins.length >= 1 && outs.length >= n - 1;
+  });
+  if (!groups.length) return null;
+  const g = pick(groups);
+  const correct = pick(DISNEY.filter(c => c.groups.includes(g)));
+  const distract = sample(DISNEY.filter(c => !c.groups.includes(g)), n - 1);
+  const set = shuffle([correct, ...distract]);
+  return {
+    say:`Who is from ${DISNEY_GROUP_Q[g]}?`,
+    choices: set.map(c => ({ render:photoTile(c), correct:c.name===correct.name }))
+  };
+}
 function numChoices(opts, answer){ return opts.map(v => ({ render:numTile(v), correct:v===answer })); }
 function patternRound(seq, opts, answer){
   return {
@@ -708,7 +797,11 @@ function shade(hex, amt){ // lighten toward white by amt(0..1)
 /* =========================================================================
    SCREEN FLOW
    ========================================================================= */
-function allowed(c){ return !(c.lucasOnly && state.level === 'simple'); }   // hide 4.5-only cats for Owen
+function allowed(c){
+  if (c.lucasOnly && state.level === 'simple') return false;   // hide 4.5-only cats for Owen
+  if (c.available && !c.available()) return false;             // hide cats with no content (e.g. Disney w/o images)
+  return true;
+}
 function buildHome(){
   const grid = $('#catGrid'); grid.innerHTML = '';
   Object.entries(CATS).forEach(([id, c]) => {
