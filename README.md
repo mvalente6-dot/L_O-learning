@@ -14,6 +14,7 @@ Open `Kids Learning Game - 2026-06-04.html` in any phone or desktop browser. No 
 - Every prompt is **spoken aloud** (Web Speech API) — no reading required except single letters.
 - **Real animal-sound recordings** play on the "who says this?" question and as a reward for a correct tap.
 - Dinosaurs are hand-built inline SVG illustrations; feedback chimes are generated with the Web Audio API. No external asset files.
+- **Conversation Sparks** — a low-key button at the bottom of the home screen opens a parent tool: one open-ended "spark" question at a time ("What superpower would you pick?"). Tap **🔊 Listen** to have it read aloud, **Next ➜** (or the card) to advance. One shuffled deck of 60, no scoring.
 
 ## Difficulty scaling
 
