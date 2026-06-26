@@ -104,11 +104,12 @@
 
   /* ---------- Conversation Sparks entry (low-prominence, parent tool) ---------- */
   .sparks-entry{
-    align-self:center; margin:8px auto 16px;
-    border:1.5px solid #d6d2cc; background:transparent;
+    align-self:center; margin:10px auto 4px;
+    position:sticky; bottom:10px; z-index:5;   /* always reachable, even if the tiles overflow */
+    border:1.5px solid #d6d2cc; background:var(--bg);
     color:#8a8079; border-radius:16px;
     padding:8px 16px; font-size:13px; font-weight:bold;
-    font-family:inherit; cursor:pointer; opacity:.7;
+    font-family:inherit; cursor:pointer; opacity:.85;
     display:inline-flex; align-items:center; gap:6px;
     transition:transform .08s, opacity .15s;
   }
