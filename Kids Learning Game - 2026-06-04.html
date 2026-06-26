@@ -918,7 +918,7 @@ const SPARKS = [
 let sparkDeck = [], sparkIdx = 0;
 function refillSparks(){ sparkDeck = shuffle(SPARKS); sparkIdx = 0; }
 function showSpark(){
-  speechSynthesis.cancel();                 // don't carry a previous question's speech over
+  if ('speechSynthesis' in window) speechSynthesis.cancel();  // don't carry a previous question's speech over
   if (sparkIdx >= sparkDeck.length) refillSparks();
   $('#sparkText').textContent = sparkDeck[sparkIdx];
   $('#sparkProgress').textContent = (sparkIdx + 1) + ' / ' + sparkDeck.length;
@@ -931,7 +931,7 @@ $('#sparkCard').onclick = nextSpark;          // tapping the card also advances
 $('#sparkListen').onclick = () => speak(sparkDeck[sparkIdx]);   // speak only on request
 
 /* ---------- controls ---------- */
-$('#homeBtn').onclick = () => { speechSynthesis.cancel(); state.category = null; showScreen('home'); };
+$('#homeBtn').onclick = () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); state.category = null; showScreen('home'); };
 $('#replay').onclick = () => {
   if (!state.current) return;
   speak(state.current.say);
