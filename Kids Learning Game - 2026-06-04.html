@@ -304,18 +304,31 @@ const state = { level: 'simple', category: null, stars: 0, current: null, locked
 let voice = null;
 function loadVoice(){
   const vs = speechSynthesis.getVoices();
-  if (location.hash === '#voices') console.log('voices:', vs.map(v => v.name + ' / ' + v.lang));
   const en = vs.filter(v => /^en/i.test(v.lang));
   const enUS = en.filter(v => /en(-|_)?US/i.test(v.lang));
-  const find = (pool, re) => pool.find(v => re.test(v.name));
-  // tier 1: enhanced/premium/neural/siri (quality-signalling names)
-  voice = find(enUS, /enhanced|premium|neural|siri/i)
-       || find(en,   /enhanced|premium|neural|siri/i)
-  // tier 2: known-good natural voices by name
-       || find(enUS, /samantha|ava|allison|susan|karen|moira|tessa|nicky|zoe|ivy|salli|joanna|kendra|kimberly|justin|google us|zira|female/i)
-       || find(en,   /samantha|ava|allison|susan|karen|moira|tessa|nicky|zoe|ivy|salli|joanna|kendra|kimberly|justin|google us|zira|female/i)
+  // iOS gives the compact (robotic) & enhanced (natural) versions the SAME name;
+  // the quality marker lives in voiceURI, so match name + uri and rank by quality.
+  const tag  = v => v.name + ' ' + (v.voiceURI || '');
+  const qual = v => /premium|enhanced|neural/i.test(tag(v)) ? 2 : /compact/i.test(tag(v)) ? 0 : 1;
+  const best = (pool, re) => pool.filter(v => re.test(tag(v))).sort((a,b) => qual(b) - qual(a))[0];
+  const NAMES = /samantha|ava|allison|susan|karen|moira|tessa|nicky|zoe|joelle|noelle|ivy|salli|joanna|kendra|kimberly|justin|google us|zira|female/i;
+  // tier 1: any premium/enhanced/neural/siri voice (downloaded "Enhanced" voices match via voiceURI), best quality first
+  voice = best(enUS, /premium|enhanced|neural|siri/i)
+       || best(en,   /premium|enhanced|neural|siri/i)
+  // tier 2: known-good natural voices by name, preferring the highest-quality variant
+       || best(enUS, NAMES)
+       || best(en,   NAMES)
   // tier 3: any en-US, then any en-*, then first available
        || enUS[0] || en[0] || vs[0] || null;
+  if (location.hash === '#voices') showVoices(vs);
+}
+function showVoices(vs){              // on-screen voice list (readable on the phone): load with #voices, tap to close
+  let d = $('#voiceDbg');
+  if (!d){ d = document.createElement('div'); d.id = 'voiceDbg';
+    d.style.cssText = 'position:fixed;inset:0;z-index:9999;overflow:auto;background:#fff;color:#000;font:12px/1.45 monospace;padding:12px;white-space:pre-wrap';
+    d.onclick = () => d.remove(); document.body.appendChild(d); }
+  d.textContent = '(tap to close)\nchosen → ' + (voice ? voice.name + '  [' + (voice.voiceURI || '') + ']' : 'none') + '\n\n'
+    + vs.map(v => (v === voice ? '✓ ' : '  ') + v.name + ' | ' + v.lang + ' | ' + (v.voiceURI || '')).join('\n');
 }
 if ('speechSynthesis' in window){
   loadVoice();
