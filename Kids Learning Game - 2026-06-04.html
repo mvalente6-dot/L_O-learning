@@ -302,7 +302,7 @@ const state = { level: 'simple', category: null, stars: 0, current: null, locked
 
 /* ---------- speech ---------- */
 let voice = null;
-let vRate = 0.9, vPitch = 1.05;   // global voice tuning (adjust live via #tune, then bake these in)
+let vRate = 0.9, vPitch = 1.3;   // global voice tuning (adjust live via #tune, then bake these in)
 function loadVoice(){
   const vs = speechSynthesis.getVoices();
   const en = vs.filter(v => /^en/i.test(v.lang));
