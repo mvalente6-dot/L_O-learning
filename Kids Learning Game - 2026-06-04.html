@@ -302,6 +302,7 @@ const state = { level: 'simple', category: null, stars: 0, current: null, locked
 
 /* ---------- speech ---------- */
 let voice = null;
+let vRate = 0.9, vPitch = 1.05;   // global voice tuning (adjust live via #tune, then bake these in)
 function loadVoice(){
   const vs = speechSynthesis.getVoices();
   const en = vs.filter(v => /^en/i.test(v.lang));
@@ -334,13 +335,36 @@ if ('speechSynthesis' in window){
   loadVoice();
   speechSynthesis.onvoiceschanged = loadVoice;
 }
+if (location.hash === '#tune') showTune();
 function speak(text){
   if (!('speechSynthesis' in window)) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   if (voice) u.voice = voice;
-  u.rate = 0.9; u.pitch = 1.15; u.volume = 1;
+  u.rate = vRate; u.pitch = vPitch; u.volume = 1;
   speechSynthesis.speak(u);
+}
+function showTune(){              // on-phone voice tuner: load with #tune, drag sliders, report the two numbers
+  if ($('#tuneDbg')) return;
+  const d = document.createElement('div'); d.id = 'tuneDbg';
+  d.style.cssText = 'position:fixed;inset:0;z-index:9999;overflow:auto;background:#fff;color:#000;font:18px/1.6 system-ui,sans-serif;padding:20px;text-align:center';
+  const fmt = () => 'rate ' + vRate.toFixed(2) + ' · pitch ' + vPitch.toFixed(2);
+  d.innerHTML = '<h2 style="margin:.2em 0">Voice tuning</h2>'
+    + '<div id="tuneVal" style="font:bold 28px monospace;margin:.4em 0">' + fmt() + '</div>'
+    + '<div style="opacity:.7;font-size:14px;margin-bottom:1em">Tell Claude these two numbers.</div>'
+    + '<label style="display:block;margin:1em 0 .2em">Rate (speed)</label>'
+    + '<input id="tuneRate" type="range" min="0.6" max="1.2" step="0.05" value="' + vRate + '" style="width:90%">'
+    + '<label style="display:block;margin:1em 0 .2em">Pitch</label>'
+    + '<input id="tunePitch" type="range" min="0.6" max="1.4" step="0.05" value="' + vPitch + '" style="width:90%">'
+    + '<div style="margin-top:1.5em">'
+    + '<button id="tuneSay" style="font-size:20px;padding:.6em 1.2em;margin:.3em">▶ Speak sample</button>'
+    + '<button id="tuneClose" style="font-size:20px;padding:.6em 1.2em;margin:.3em">Close</button></div>';
+  document.body.appendChild(d);
+  const upd = () => { $('#tuneVal').textContent = fmt(); };
+  $('#tuneRate').oninput  = e => { vRate  = +e.target.value; upd(); };
+  $('#tunePitch').oninput = e => { vPitch = +e.target.value; upd(); };
+  $('#tuneSay').onclick   = () => speak('Find the red circle. Great job!');
+  $('#tuneClose').onclick = () => d.remove();
 }
 
 /* ---------- sound effects (Web Audio, no files) ---------- */
