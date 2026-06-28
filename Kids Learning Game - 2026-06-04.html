@@ -304,10 +304,18 @@ const state = { level: 'simple', category: null, stars: 0, current: null, locked
 let voice = null;
 function loadVoice(){
   const vs = speechSynthesis.getVoices();
-  // prefer an English voice, ideally a clearer/female one for kids
-  voice = vs.find(v => /en(-|_)?US/i.test(v.lang) && /female|samantha|zira|google us/i.test(v.name))
-       || vs.find(v => /^en/i.test(v.lang))
-       || vs[0] || null;
+  if (location.hash === '#voices') console.log('voices:', vs.map(v => v.name + ' / ' + v.lang));
+  const en = vs.filter(v => /^en/i.test(v.lang));
+  const enUS = en.filter(v => /en(-|_)?US/i.test(v.lang));
+  const find = (pool, re) => pool.find(v => re.test(v.name));
+  // tier 1: enhanced/premium/neural/siri (quality-signalling names)
+  voice = find(enUS, /enhanced|premium|neural|siri/i)
+       || find(en,   /enhanced|premium|neural|siri/i)
+  // tier 2: known-good natural voices by name
+       || find(enUS, /samantha|ava|allison|susan|karen|moira|tessa|nicky|zoe|ivy|salli|joanna|kendra|kimberly|justin|google us|zira|female/i)
+       || find(en,   /samantha|ava|allison|susan|karen|moira|tessa|nicky|zoe|ivy|salli|joanna|kendra|kimberly|justin|google us|zira|female/i)
+  // tier 3: any en-US, then any en-*, then first available
+       || enUS[0] || en[0] || vs[0] || null;
 }
 if ('speechSynthesis' in window){
   loadVoice();
@@ -981,6 +989,8 @@ toggleBtns.forEach(b => {
 /* ---------- start gate (unlock audio with a real user gesture) ---------- */
 $('#startBtn').onclick = () => {
   try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); actx.resume(); }catch(e){}
+  // re-run voice selection after gesture; iOS/Silk often populate voices only now
+  if ('speechSynthesis' in window) loadVoice();
   // warm up speech + unlock recorded audio on iOS (must follow this gesture)
   speak('Lets play and learn!');
   unlockAudio();
