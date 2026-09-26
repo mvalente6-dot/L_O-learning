@@ -89,7 +89,7 @@
   .home-title{text-align:center; font-size:26px; font-weight:bold; margin:4px 0 12px;}
   .cat-grid{
     display:grid; grid-template-columns:1fr 1fr; gap:14px;
-    padding-bottom:20px;
+    padding-bottom:84px;
   }
   .cat{
     border:none; border-radius:24px; color:#fff;
@@ -188,6 +188,26 @@
   .choice svg{max-width:90%; max-height:90%;}
   .choice.correct{animation:pop .5s; background:#dcfce7;}
   .choice.wrong{animation:shake .4s; background:#ffedd5;}
+  .choice.hint{animation:hintpulse .7s ease-in-out infinite; outline:4px solid #facc15;}
+  @keyframes hintpulse{50%{transform:scale(1.04)}}
+  .choices.one{grid-template-columns:1fr;}
+  .move-pic{font-size:120px;line-height:1;}
+  .dino-big svg{width:min(72vw,280px);height:auto;}
+  .seen{width:18px;height:18px;border-radius:50%;background:#22c55e;margin:8px auto 0;color:transparent;font-size:0;}
+  .same-tile{display:flex;align-items:center;gap:8px;justify-content:center;}
+  .same-tile .objects span{font-size:28px;}
+  .scene{position:relative;width:110px;height:90px;}
+  .scene .prop{position:absolute;left:28px;bottom:16px;width:54px;height:36px;border:5px solid #92400e;border-radius:8px;}
+  .scene .glyph{position:absolute;font-size:28px;line-height:1;}
+  .sc-in .glyph{left:40px;bottom:22px;}
+  .sc-on .glyph{left:40px;bottom:52px;}
+  .sc-under .glyph{left:40px;bottom:0;}
+  .sc-beside .glyph{left:0;bottom:20px;}
+  .prop-bowl .prop{border-radius:0 0 28px 28px;border-top:none;}
+  .prop-bed .prop{border-radius:10px 10px 4px 4px;background:#bfdbfe;}
+  .prop-hat .prop{border-radius:40px 40px 6px 6px;height:24px;background:#f59e0b;}
+  .spark-moon{border:none;background:transparent;font-size:28px;cursor:pointer;align-self:center;}
+  .check-go .emoji{font-size:min(28vw,120px);}
   @keyframes pop{0%{transform:scale(1);}40%{transform:scale(1.12);}100%{transform:scale(1);}}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-6px);}80%{transform:translateX(6px);}}
 
@@ -251,6 +271,7 @@
     <!-- CONVERSATION SPARKS -->
     <section class="screen" id="sparks">
       <div class="spark-progress" id="sparkProgress"></div>
+      <button class="spark-moon" id="sparkMoon" type="button">🌙</button>
       <button class="spark-card" id="sparkCard">
         <span class="spark-text" id="sparkText"></span>
       </button>
@@ -283,7 +304,7 @@
 
 <script>
 /* =========================================================================
-   Play & Learn — single-file learning game for ages ~2 and ~4.5
+   Play & Learn — single-file learning game for Owen (~2.75) and Lucas (5)
    - All prompts are SPOKEN by the device (Web Speech API). No reading needed
      except the Letters category (by design).
    - Visuals are emoji + inline SVG. Feedback sounds are generated tones.
@@ -298,7 +319,7 @@ const sample = (a, n) => shuffle(a).slice(0, n);
 const pick = a => a[rand(a.length)];
 
 /* ---------- state ---------- */
-const state = { level: 'simple', category: null, stars: 0, current: null, locked: false };
+const state = { level:'simple', category:null, stars:0, current:null, locked:false, step:0, bag:{}, misses:0, mode:null, starBank:{simple:0, complex:0}, seen:[], seq:[] };
 
 /* ---------- speech ---------- */
 let voice = null;
@@ -425,7 +446,8 @@ function unlockAudio(){
 const COLORS = [
   {name:'red',hex:'#ef4444'},{name:'blue',hex:'#3b82f6'},{name:'green',hex:'#22c55e'},
   {name:'yellow',hex:'#facc15'},{name:'orange',hex:'#f97316'},{name:'purple',hex:'#a855f7'},
-  {name:'pink',hex:'#ec4899'},{name:'brown',hex:'#92551e'}
+  {name:'pink',hex:'#ec4899'},{name:'brown',hex:'#92551e'},
+  {name:'black',hex:'#222222'},{name:'white',hex:'#ffffff'}
 ];
 
 const SHAPES = {
@@ -553,16 +575,100 @@ const ANIMAL_AUDIO = {"cat":"data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAAD
 
 const COUNT_OBJECTS = ['🍎','🍌','⭐','🐟','🌸','🚗','🎈','🐝','🍓','🦋'];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-// simple phonics: first-sound word per letter (spoken, kid taps the letter)
-const PHONICS = {A:'a, apple',B:'b, ball',C:'c, cat',D:'d, dog',E:'e, egg',F:'f, fish',
-  G:'g, goat',H:'h, hat',I:'i, igloo',J:'j, jam',K:'k, kite',L:'l, lion',M:'m, moon',
-  N:'n, nest',O:'o, octopus',P:'p, pig',R:'r, rain',S:'s, sun',T:'t, top'};
+const PICTURES = [
+  ['A','apple','🍎'],['B','ball','⚽'],['C','cat','🐱'],['D','dog','🐶'],['E','egg','🥚'],
+  ['F','fish','🐟'],['G','goat','🐐'],['H','hat','🎩'],['J','juice','🧃'],['K','kite','🪁'],
+  ['L','lion','🦁'],['M','moon','🌙'],['N','nose','👃'],['O','octopus','🐙'],['P','pig','🐷'],
+  ['R','rabbit','🐰'],['S','sun','☀️'],['T','turtle','🐢'],['U','umbrella','☂️'],['V','violin','🎻'],
+  ['W','whale','🐳'],['Y','yo-yo','🪀'],['Z','zebra','🦓']
+];
+const NUM_WORDS = ['zero','one','two','three','four','five','six','seven','eight','nine','ten'];
+const numWord = n => NUM_WORDS[n] || String(n);
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+function roll(list){
+  if (state.mode && list.indexOf(state.mode) >= 0) return state.mode;
+  return pick(list);
+}
+function save(){
+  try{
+    if (!state.starBank) state.starBank = { simple:0, complex:0 };
+    state.starBank[state.level] = state.stars;
+    localStorage.setItem('playlearn-v1', JSON.stringify({ level: state.level, stars: state.starBank, seen: state.seen || [] }));
+  }catch(e){}
+}
+function loadSave(){
+  state.starBank = { simple:0, complex:0 };
+  state.seen = [];
+  try{
+    const raw = localStorage.getItem('playlearn-v1');
+    if (raw){
+      const s = JSON.parse(raw);
+      if (s.level === 'simple' || s.level === 'complex') state.level = s.level;
+      if (s.stars){ state.starBank.simple = s.stars.simple|0; state.starBank.complex = s.stars.complex|0; }
+      if (Array.isArray(s.seen)) state.seen = s.seen.slice();
+    }
+  }catch(e){}
+  state.stars = state.starBank[state.level] || 0;
+}
 
-/* =========================================================================
-   CATEGORIES — each builds a round for the active level.
-   A round = { say, choices:[{render, correct}], threeUp(optional), stage(optional) }
-   ========================================================================= */
 const numChoiceCount = () => state.level === 'simple' ? 3 : 4;
+const DINO_CLUE = {
+  Brachiosaurus:'the one with a long neck', 'T-Rex':'the one with tiny arms',
+  Stegosaurus:'the one with plates on its back', Triceratops:'the one with three horns',
+  Pterodactyl:'the one with wings'
+};
+const DINO_SAY = {
+  Brachiosaurus:'Brack ee oh sore us', 'T-Rex':'tee rex', Stegosaurus:'steg oh sore us',
+  Triceratops:'try sair uh tops', Pterodactyl:'ter oh dack till', Raptor:'rapter'
+};
+const MUSEUM = [
+  {name:'Brachiosaurus', look:'Look at the long neck.', fact:'It ate plants.'},
+  {name:'T-Rex', look:'Look at the tiny arms.', fact:'It ate meat.'},
+  {name:'Stegosaurus', look:'Look at the plates on its back.', fact:'It ate plants.'},
+  {name:'Triceratops', look:'Look at the three horns.', fact:'It ate plants.'},
+  {name:'Pterodactyl', look:'Look at the wings.', fact:'It could fly.'},
+  {name:'Raptor', look:'Look at this raptor.', fact:'It ate meat.'}
+];
+const MOVE_OWEN = [
+  ['Reach up high.','🙆'],['Touch your toes.','🦶'],['Jump. Jump.','🦘'],['Spin around.','🔄'],
+  ['March. March. March.','👣'],['Wiggle your body.','〰️'],['Stomp your feet.','👟'],['Tiptoe. Shh.','🤫'],
+  ['Flap like a bird.','🐦']
+];
+const MOVE_LUCAS = [
+  ['Reach up high.','🙆'],['Touch your toes.','🦶'],['Jump. Jump.','🦘'],['Clap three times.','👏'],
+  ['Spin around.','🔄'],['March. March. March.','👣'],['Wiggle your body.','〰️'],['Clap five times.','👏'],
+  ['Stomp your feet.','👟'],['Tiptoe. Shh.','🤫'],['Flap like a bird.','🐦'],['Stand on one foot.','🦵']
+];
+const HATS = [['party hat','🥳'],['sun hat','👒'],['winter hat','🧢']];
+const OWEN_PETS = ['dog','cat','cow','duck','frog','bear'];
+const LIGHT_PATS = [['blue','yellow'],['red','green','red'],['yellow','blue','yellow','green']];
+const LIGHT_HEX = { red:'#ef4444', blue:'#3b82f6', yellow:'#facc15', green:'#22c55e' };
+const STORIES = [
+  {say:'You got a big hug. How do you feel?', face:'happy', faces:['happy','sad','mad','surprised'], follow:'Who hugged you?'},
+  {say:'Your balloon flew away. How do you feel?', face:'sad', faces:['sad','happy','proud','mad'], follow:'What could we do next?'},
+  {say:'Someone knocked your blocks down. How do you feel?', face:'mad', faces:['mad','happy','proud','surprised'], follow:'What helps when you feel mad?'},
+  {say:'A door slammed loud. How do you feel?', face:'scared', faces:['scared','happy','proud','surprised'], follow:'You are safe. What helps you feel safe?'},
+  {say:'You zipped your coat all by yourself. How do you feel?', face:'proud', faces:['proud','sad','scared','mad'], follow:'What else can you do all by yourself?'},
+  {say:'A puppy was behind the door. How do you feel?', face:'surprised', faces:['surprised','sad','mad','proud'], follow:'What did you think it was?'}
+];
+const RHYMES = [
+  ['cat',[['hat','🎩',true],['dog','🐶',false],['sun','☀️',false]]],
+  ['dog',[['frog','🐸',true],['hat','🎩',false],['cake','🎂',false]]],
+  ['bee',[['tree','🌳',true],['cat','🐱',false],['ball','⚽',false]]],
+  ['cake',[['snake','🐍',true],['pig','🐷',false],['star','⭐',false]]],
+  ['star',[['car','🚗',true],['duck','🦆',false],['fish','🐟',false]]],
+  ['box',[['fox','🦊',true],['moon','🌙',false],['boat','⛵',false]]],
+  ['sock',[['clock','🕐',true],['cup','☕',false],['bird','🐦',false]]],
+  ['mouse',[['house','🏠',true],['frog','🐸',false],['apple','🍎',false]]]
+];
+const PLACES = [
+  {say:'Ball in the box.', glyph:'⚽', prop:'box', answer:'in', opts:['in','on','under']},
+  {say:'Ball on the box.', glyph:'⚽', prop:'box', answer:'on', opts:['in','on','under']},
+  {say:'Ball under the box.', glyph:'⚽', prop:'box', answer:'under', opts:['in','on','under']},
+  {say:'Apple in the bowl.', glyph:'🍎', prop:'bowl', answer:'in', opts:['in','on','under']},
+  {say:'Cat on the bed.', glyph:'🐱', prop:'bed', answer:'on', opts:['on','under','beside']},
+  {say:'Duck under the hat.', glyph:'🦆', prop:'hat', answer:'under', opts:['under','on','beside']}
+];
 
 const CATS = {
   numbers: {
@@ -570,42 +676,81 @@ const CATS = {
     build(){
       const n = numChoiceCount();
       if (state.level === 'simple'){
-        // Owen (2.5): tiny quantities only, 1–5
-        const mode = pick(['count','hear']);
+        const mode = roll(['count','hear','more','less']);
+        if (mode === 'more' || mode === 'less'){
+          const pair = pick([[1,3],[2,5],[1,4]]);
+          const hi = Math.max(pair[0], pair[1]), lo = Math.min(pair[0], pair[1]);
+          const obj = pick(COUNT_OBJECTS);
+          const askMore = mode === 'more';
+          return {
+            say: askMore ? 'Which has more?' : 'Which has less?',
+            choices: shuffle([
+              {render:pile(obj, hi), correct:askMore},
+              {render:pile(obj, lo), correct:!askMore}
+            ])
+          };
+        }
         if (mode === 'count'){
           const obj = pick(COUNT_OBJECTS);
           const answer = 1 + rand(5);
-          const opts = uniqueNums(answer, n, 1, 5);
           return {
             say:`Count the ${objWord(obj)}. How many are there?`,
             stage:`<div class="objects">${('<span>'+obj+'</span>').repeat(answer)}</div>`,
-            choices: numChoices(opts, answer)
+            choices: numChoices(uniqueNums(answer, n, 1, 5), answer)
           };
-        } else {
-          const answer = 1 + rand(5);
-          const opts = uniqueNums(answer, n, 1, 5);
-          return { say:`Find the number ${answer}.`, choices: numChoices(opts, answer) };
         }
-      } else {
-        // Lucas (4.5): count to 10, single-digit addition summing to 10 or less
-        const mode = pick(['quantity','add']);
-        if (mode === 'quantity'){
-          const answer = 1 + rand(10);
-          const obj = pick(COUNT_OBJECTS);
-          const opts = uniqueNums(answer, n, 1, 10);
-          return {
-            say:`Which one shows ${answer}? Find ${answer} ${objWord(obj)}.`,
-            choices: opts.map(v => ({
-              render:`<div class="objects" style="max-width:120px">${('<span style="font-size:20px">'+obj+'</span>').repeat(v)}</div>`,
-              correct: v === answer
-            }))
-          };
-        } else {
-          const a = 1 + rand(5), b = 1 + rand(5), answer = a + b;   // addends 1–5, sums 2–10
-          const opts = uniqueNums(answer, n, 2, 10);
-          return { say:`What is ${a} plus ${b}?`, choices: numChoices(opts, answer) };
-        }
+        const answer = 1 + rand(5);
+        return { say:`Find the number ${answer}.`, choices: numChoices(uniqueNums(answer, n, 1, 5), answer) };
       }
+      const mode = roll(['count','add','take','more','less','same']);
+      if (mode === 'count'){
+        const answer = 1 + rand(10);
+        const obj = pick(COUNT_OBJECTS);
+        return {
+          say:`How many ${objWord(obj)}?`,
+          stage:`<div class="objects">${('<span>'+obj+'</span>').repeat(answer)}</div>`,
+          choices: numChoices(uniqueNums(answer, n, 1, 10), answer)
+        };
+      }
+      if (mode === 'add'){
+        const a = 1 + rand(5), b = 1 + rand(5), answer = a + b;
+        return { say:`What is ${a} plus ${b}?`, choices: numChoices(uniqueNums(answer, n, 2, 10), answer) };
+      }
+      if (mode === 'take'){
+        const startN = 1 + rand(5);
+        const eat = 1 + rand(startN);
+        const left = startN - eat;
+        const obj = pick(COUNT_OBJECTS);
+        return {
+          say:`${cap(numWord(startN))} ${objWord(obj, startN)}. Eat ${numWord(eat)}. How many are left?`,
+          stage:pile(obj, startN),
+          choices: uniqueNums(left, 4, 0, 5).map(v => ({render:pile(obj, v), correct:v === left}))
+        };
+      }
+      if (mode === 'same'){
+        const obj = pick(COUNT_OBJECTS);
+        const k = 2 + rand(2);
+        return {
+          say:'Which pile has more? Tap same if they match.',
+          praiseSay:'Same. They both have ' + numWord(k) + '.',
+          choices: shuffle([
+            {render:pile(obj, k), correct:false},
+            {render:pile(obj, k), correct:false},
+            {render:sameTile(obj, k), correct:true}
+          ])
+        };
+      }
+      const pair = pick([[3,4],[4,5],[2,3]]);
+      const hi = Math.max(pair[0], pair[1]), lo = Math.min(pair[0], pair[1]);
+      const obj = pick(COUNT_OBJECTS);
+      const askMore = mode === 'more';
+      return {
+        say: askMore ? 'Which has more?' : 'Which has less?',
+        choices: shuffle([
+          {render:pile(obj, hi), correct:askMore},
+          {render:pile(obj, lo), correct:!askMore}
+        ])
+      };
     }
   },
 
@@ -613,25 +758,23 @@ const CATS = {
     label:'Colors', icon:'🎨', color:'#3b82f6',
     build(){
       const n = numChoiceCount();
-      const set = sample(COLORS, n);
-      const target = pick(set);
       if (state.level === 'simple'){
+        const set = sample(COLORS, n);
+        const target = pick(set);
         return {
           say:`Tap the ${target.name} one.`,
-          choices: set.map(c => ({ render:swatch(c.hex), correct:c.name===target.name }))
+          choices: set.map(c => ({render:swatch(c.hex), correct:c.name === target.name}))
         };
-      } else {
-        // "find something that is <color>" using colored emoji-ish swatches with shade distractor
-        const base = pick(COLORS);
-        const light = shade(base.hex, 0.55), dark = base.hex;
-        const which = pick(['light','dark']);
-        const others = sample(COLORS.filter(c=>c.name!==base.name), n-2);
-        let arr = [
-          {render:swatch(light), correct:which==='light', tag:'light'},
-          {render:swatch(dark),  correct:which==='dark',  tag:'dark'}
-        ].concat(others.map(c=>({render:swatch(c.hex), correct:false})));
-        return { say:`Tap the ${which} ${base.name} one.`, choices: shuffle(arr) };
       }
+      const bases = COLORS.filter(c => ['blue','green','purple'].indexOf(c.name) >= 0);
+      const base = pick(bases);
+      const which = pick(['pale','dark']);
+      const others = sample(COLORS.filter(c => c.name !== base.name && c.name !== 'white' && c.name !== 'black'), n - 2);
+      const arr = [
+        {render:swatch(shade(base.hex, 0.75)), correct:which === 'pale'},
+        {render:swatch(base.hex), correct:which === 'dark'}
+      ].concat(others.map(c => ({render:swatch(c.hex), correct:false})));
+      return { say:`Tap the ${which} ${base.name} one.`, choices: shuffle(arr) };
     }
   },
 
@@ -641,64 +784,49 @@ const CATS = {
       const n = numChoiceCount();
       const names = Object.keys(SHAPES);
       if (state.level === 'simple'){
-        // Owen (2.5): only the basic, clearly-distinct shapes
         const basic = ['circle','square','triangle','star','heart'];
         const set = sample(basic, n);
         const target = pick(set);
         const col = pick(COLORS).hex;
-        return {
-          say:`Find the ${target}.`,
-          choices: set.map(s => ({ render:shapeSVG(s, col), correct:s===target }))
-        };
-      } else {
-        // count the sides — target is the ONLY shape with that many sides,
-        // so distractors must not share the target's side count.
-        const sided = names.filter(s => SHAPE_SIDES[s] > 0);
-        const target = pick(sided);
-        const sides = SHAPE_SIDES[target];
-        const distractors = sample(names.filter(s => SHAPE_SIDES[s] !== sides), n - 1);
-        const set = shuffle([target, ...distractors]);
-        const col = pick(COLORS).hex;
-        return {
-          say:`Which shape has ${sides} sides?`,
-          choices: set.map(s => ({ render:shapeSVG(s, col), correct:s===target }))
-        };
+        return { say:`Find the ${target}.`, choices: set.map(s => ({render:shapeSVG(s, col), correct:s === target})) };
       }
+      const sided = names.filter(s => SHAPE_SIDES[s] > 0);
+      const target = pick(sided);
+      const sides = SHAPE_SIDES[target];
+      const distractors = sample(names.filter(s => SHAPE_SIDES[s] !== sides), n - 1);
+      const set = shuffle([target, ...distractors]);
+      const col = pick(COLORS).hex;
+      return { say:`Which shape has ${sides} sides?`, choices: set.map(s => ({render:shapeSVG(s, col), correct:s === target})) };
     }
   },
 
   letters: {
-    label:'Letters', icon:'🔤', color:'#a855f7', lucasOnly:true,   // reading/phonics — 4.5 only
+    label:'Letters', icon:'🔤', color:'#a855f7', lucasOnly:true,
     build(){
       const n = numChoiceCount();
-      if (state.level === 'simple'){
-        const mode = pick(['name','sound']);
-        if (mode === 'name'){
-          const set = sample(LETTERS, n);
-          const target = pick(set);
-          return {
-            say:`Find the letter ${target}.`,
-            choices: set.map(L => ({ render:letterTile(L), correct:L===target }))
-          };
-        } else {
-          const keys = Object.keys(PHONICS);
-          const target = pick(keys);
-          const set = sample([target, ...sample(LETTERS.filter(L=>L!==target), n-1)], n);
-          return {
-            say:`Which letter says... ${PHONICS[target]}?`,
-            choices: set.map(L => ({ render:letterTile(L), correct:L===target }))
-          };
-        }
-      } else {
-        // uppercase shown -> tap matching lowercase
+      const mode = roll(['find','sound','case']);
+      if (mode === 'find'){
         const set = sample(LETTERS, n);
         const target = pick(set);
+        return { say:`Find the letter ${target}.`, choices: set.map(L => ({render:letterTile(L), correct:L === target})) };
+      }
+      if (mode === 'sound'){
+        const row = pick(PICTURES);
+        const target = row[0];
+        const set = shuffle([target, ...sample(LETTERS.filter(L => L !== target), n - 1)]);
         return {
-          say:`This is big ${target}. Find the little ${target}.`,
-          stage:`<div class="big-show">${target}</div>`,
-          choices: set.map(L => ({ render:letterTile(L.toLowerCase()), correct:L===target }))
+          say:`Which letter says ${target}, ${row[1]}?`,
+          stage:`<div class="big-show">${row[2]}</div>`,
+          choices: set.map(L => ({render:letterTile(L), correct:L === target}))
         };
       }
+      const set = sample(LETTERS, n);
+      const target = pick(set);
+      return {
+        say:`This is big ${target}. Find the little ${target}.`,
+        stage:`<div class="big-show">${target}</div>`,
+        choices: set.map(L => ({render:letterTile(L.toLowerCase()), correct:L === target}))
+      };
     }
   },
 
@@ -706,100 +834,339 @@ const CATS = {
     label:'Animals', icon:'🐾', color:'#f97316',
     build(){
       const n = numChoiceCount();
-      const set = sample(ANIMALS, n);
-      const target = pick(set);
       if (state.level === 'simple'){
-        return {
-          say:`Find the ${target.name}.`,
-          choices: set.map(a => ({ render:emojiTile(a.emoji), correct:a.name===target.name, aname:a.name }))
-        };
-      } else {
-        const mode = pick(['sound','farm']);
-        if (mode === 'sound'){
-          return {
-            say:`Who says this?`,
-            sound: target.name,           // play the real recording as the question
-            choices: set.map(a => ({ render:emojiTile(a.emoji), correct:a.name===target.name, aname:a.name }))
-          };
-        } else {
-          const farmOnes = ANIMALS.filter(a=>FARM.includes(a.name));
-          const wildOnes = ANIMALS.filter(a=>!FARM.includes(a.name));
-          const ans = pick(farmOnes);
-          const set2 = shuffle([ans, ...sample(wildOnes, n-1)]);
-          return {
-            say:`Which one is a farm animal?`,
-            choices: set2.map(a => ({ render:emojiTile(a.emoji), correct:a.name===ans.name, aname:a.name }))
-          };
-        }
+        const mode = roll(['find','sound']);
+        const set = sample(ANIMALS, n);
+        const target = pick(set);
+        const choices = set.map(a => ({render:emojiTile(a.emoji), correct:a.name === target.name, aname:a.name}));
+        if (mode === 'sound') return { say:'Who says this?', sound:target.name, choices };
+        return { say:`Find the ${target.name}.`, choices };
       }
+      const mode = roll(['sound','farm','wild']);
+      if (mode === 'sound'){
+        const set = sample(ANIMALS, n);
+        const target = pick(set);
+        return { say:'Who says this?', sound:target.name, choices:set.map(a => ({render:emojiTile(a.emoji), correct:a.name === target.name, aname:a.name})) };
+      }
+      const farmOnes = ANIMALS.filter(a => FARM.indexOf(a.name) >= 0);
+      const wildOnes = ANIMALS.filter(a => FARM.indexOf(a.name) < 0);
+      if (mode === 'farm'){
+        const ans = pick(farmOnes);
+        const set2 = shuffle([ans, ...sample(wildOnes, n - 1)]);
+        return { say:'Which one is a farm animal?', choices:set2.map(a => ({render:emojiTile(a.emoji), correct:a.name === ans.name, aname:a.name})) };
+      }
+      const ans = pick(wildOnes);
+      const set2 = shuffle([ans, ...sample(farmOnes, n - 1)]);
+      return { say:'Which one lives in the wild?', choices:set2.map(a => ({render:emojiTile(a.emoji), correct:a.name === ans.name, aname:a.name})) };
     }
   },
 
   dinos: {
     label:'Dinos', icon:'🦖', color:'#0ea5e9',
     build(){
-      const n = numChoiceCount();              // Owen: 3 dinos, Lucas: 4 dinos
-      const set = sample(DINOS, Math.min(n, DINOS.length));
+      const n = numChoiceCount();
+      const cluePool = DINOS.filter(d => DINO_CLUE[d.name]);
+      const mode = state.level === 'simple' ? 'clue' : roll(['name','clue']);
+      const pool = mode === 'clue' ? cluePool : DINOS;
+      const set = sample(pool, Math.min(n, pool.length));
       const target = pick(set);
-      return {
-        say:`Find the ${spokenDino(target.name)}.`,
-        choices: set.map(d => ({ render:dinoTile(d), correct:d.name===target.name }))
+      const round = {
+        say: mode === 'clue' ? `Find ${DINO_CLUE[target.name]}.` : `Find the ${spokenDino(target.name)}.`,
+        choices: set.map(d => ({render:dinoTile(d), correct:d.name === target.name}))
       };
+      if (mode === 'clue') round.praiseSay = DINO_SAY[target.name];
+      return round;
     }
   },
 
   patterns: {
-    label:'Patterns', icon:'🟥', color:'#ec4899', lucasOnly:true,   // sequencing — 4.5 only
+    label:'Patterns', icon:'🟥', color:'#ec4899', lucasOnly:true,
     build(){
       const palette = ['🔴','🔵','🟡','🟢','🟣','🟠'];
-      if (state.level === 'simple'){
-        const [a,b] = sample(palette, 2);
-        const seq = [a,b,a,b,a];          // next is b
-        const answer = b;
-        const opts = shuffle([b, a, pick(palette.filter(p=>p!==a&&p!==b))]);
-        return patternRound(seq, opts, answer);
-      } else {
-        const [a,b,c] = sample(palette, 3);
-        const seq = [a,b,c,a,b,c,a];      // next is b
-        const answer = b;
-        const opts = shuffle([b, c, a, pick(palette.filter(p=>![a,b,c].includes(p)))]);
-        return patternRound(seq, opts, answer);
+      if (roll(['ab','abc']) === 'ab'){
+        const pair = sample(palette, 2);
+        const a = pair[0], b = pair[1];
+        const extra = pick(palette.filter(p => p !== a && p !== b));
+        return patternRound([a,b,a,b,a], shuffle([b, a, extra]), b);
       }
+      const tri = sample(palette, 3);
+      const a = tri[0], b = tri[1], c = tri[2];
+      const extra = pick(palette.filter(p => p !== a && p !== b && p !== c));
+      return patternRound([a,b,c,a,b,c,a], shuffle([b, c, a, extra]), b);
+    }
+  },
+
+  move: {
+    label:'Move', icon:'🤸', color:'#14b8a6',
+    build(){
+      const list = state.level === 'simple' ? MOVE_OWEN : MOVE_LUCAS;
+      const i = state.step || 0;
+      if (i >= list.length) return { say:'All done. Your body did it.', check:true, noStar:true, reset:true, choices:[] };
+      return { say:list[i][0], stage:`<div class="move-pic">${list[i][1]}</div>`, choices:[], check:true, noStar:true };
+    }
+  },
+
+  silly: {
+    label:'Silly', icon:'🦄', color:'#f472b6',
+    build(){
+      const step = state.step || 0;
+      const owen = state.level === 'simple';
+      const colors = owen ? COLORS : COLORS.filter(c => c.name !== 'black' && c.name !== 'white');
+      const pets = owen ? ANIMALS.filter(a => OWEN_PETS.indexOf(a.name) >= 0) : ANIMALS;
+      if (step === 0) return anyStep('Pick a color.', sample(colors, owen ? 3 : 4).map(c => ({render:swatch(c.hex), value:c.name, key:'color'})));
+      if (step === 1) return anyStep('Pick an animal.', sample(pets, owen ? 3 : 4).map(a => ({render:emojiTile(a.emoji), value:a.name, key:'animal'})));
+      if (step === 2) return anyStep('Tiny or giant?', [
+        {render:'<span class="emoji">🐭</span>', value:'tiny', key:'size'},
+        {render:'<span class="emoji">🐘</span>', value:'giant', key:'size'}
+      ]);
+      if (!owen && step === 3) return anyStep('Pick a hat.', HATS.map(h => ({render:`<span class="emoji">${h[1]}</span>`, value:h[0], key:'hat'})));
+      const b = state.bag;
+      const say = owen ? `A ${b.size} ${b.color} ${b.animal}.` : `A ${b.size} ${b.color} ${b.animal} with a ${b.hat}.`;
+      return { say, check:true, noStar:true, reset:true, choices:[] };
+    }
+  },
+
+  wholeft: {
+    label:'Who left', icon:'👀', color:'#64748b',
+    build(){
+      if (state.level !== 'simple' && roll(['left','lights']) === 'lights') return lightsRound();
+      if (!state.bag.looked){
+        state.bag.prepared = prepareLeft();
+        return {
+          say:'Look.', stage:state.bag.prepared.lookStage, choices:[], check:true, noStar:true, holdStep:true,
+          onCheck(){ state.bag.looked = true; }
+        };
+      }
+      const prepared = state.bag.prepared;
+      state.bag.looked = false;
+      return { say:'Who left?', stage:prepared.stayStage, choices:prepared.choices, replayOnMiss:true };
+    }
+  },
+
+  feelings: {
+    label:'Feelings', icon:'😊', color:'#eab308',
+    build(){
+      if (state.level === 'simple'){
+        const kind = pick(['happy','sad','mad']);
+        return {
+          say:`Tap the ${kind} face.`,
+          choices: ['happy','sad','mad'].map(f => ({render:face(f), correct:f === kind}))
+        };
+      }
+      const story = pick(STORIES);
+      return {
+        say:story.say, follow:story.follow,
+        choices: shuffle(story.faces.map(f => ({render:face(f), correct:f === story.face})))
+      };
+    }
+  },
+
+  names: {
+    label:'Names', icon:'✏️', color:'#0f766e',
+    build(){
+      const i = state.step || 0;
+      if (state.level === 'simple'){
+        if (i % 5 === 4) return { say:'O. W. E. N. Owen.', check:true, noStar:true, choices:[] };
+        const target = 'OWEN'[i % 5];
+        return { say:`Find ${target}.`, choices:nameChoices(target, 2 + (i % 2)), advanceStep:true };
+      }
+      if (i < 5){
+        const target = 'LUCAS'[i];
+        return {
+          say:`Tap ${target}.`,
+          stage:`<div class="big-show" style="font-size:64px">${'LUCAS'.slice(0, i)}</div>`,
+          choices:nameChoices(target, 4),
+          advanceStep:true
+        };
+      }
+      if (i === 5) return { say:'L. U. C. A. S. Lucas.', check:true, noStar:true, choices:[] };
+      const which = [
+        {answer:'L', opts:['L','B','D','M']},
+        {answer:'A', opts:['A','F','K','R']},
+        {answer:'U', opts:['T','P','U','G']}
+      ][(i - 6) % 3];
+      return {
+        say:'Which letter is in your name?',
+        advanceStep:true,
+        choices: shuffle(which.opts.map(L => ({render:letterTile(L), correct:L === which.answer})))
+      };
+    }
+  },
+
+  museum: {
+    label:'Museum', icon:'🏛️', color:'#0369a1',
+    build(){
+      const info = MUSEUM[(state.step || 0) % MUSEUM.length];
+      const d = DINOS.filter(x => x.name === info.name)[0];
+      const already = state.seen.indexOf(info.name) >= 0;
+      return {
+        say:`${info.look} This is ${DINO_SAY[info.name]}. ${info.fact}`,
+        stage:`<div class="dino-big"><svg viewBox="0 0 120 100">${d.svg}</svg></div>` + (already ? '<p class="seen">seen</p>' : ''),
+        choices:[], check:true, noStar:true, dino:info.name
+      };
+    }
+  },
+
+  turns: {
+    label:'Turns', icon:'👫', color:'#7c3aed',
+    build(){ return turnsRound(); }
+  },
+
+  rhymes: {
+    label:'Rhymes', icon:'🎵', color:'#db2777', lucasOnly:true,
+    build(){
+      const row = pick(RHYMES);
+      return {
+        say:`Which one rhymes with ${row[0]}?`,
+        choices: shuffle(row[1].map(item => ({render:emojiTile(item[1]), correct:item[2]})))
+      };
+    }
+  },
+
+  belong: {
+    label:'Odd one', icon:'🔎', color:'#b45309', lucasOnly:true,
+    build(){ return belongRound(); }
+  },
+
+  places: {
+    label:'Places', icon:'📦', color:'#65a30d',
+    build(){
+      const p = pick(PLACES);
+      return {
+        say:p.say,
+        choices: shuffle(p.opts.map(spot => ({render:scene(p.glyph, spot, p.prop), correct:spot === p.answer})))
+      };
     }
   }
 };
 
-/* ---------- render helpers ---------- */
-function swatch(hex){ return `<div style="width:80%;height:80%;border-radius:18px;background:${hex};box-shadow:inset 0 -6px 0 rgba(0,0,0,.12)"></div>`; }
+function swatch(hex){
+  return `<div style="width:80%;height:80%;border-radius:18px;background:${hex};border:3px solid #d6d3d1;box-shadow:inset 0 -6px 0 rgba(0,0,0,.12)"></div>`;
+}
 function emojiTile(e){ return `<span class="emoji">${e}</span>`; }
 function letterTile(L){ return `<span class="letter">${L}</span>`; }
 function numTile(nv){ return `<span class="num">${nv}</span>`; }
 function dinoTile(d){ return `<svg viewBox="0 0 120 100">${d.svg}</svg>`; }
-function numChoices(opts, answer){ return opts.map(v => ({ render:numTile(v), correct:v===answer })); }
+function numChoices(opts, answer){ return opts.map(v => ({render:numTile(v), correct:v === answer})); }
 function patternRound(seq, opts, answer){
   return {
     say:'What comes next?',
-    stage:`<div class="sequence">${seq.map(x=>`<div class="seq-item">${x}</div>`).join('')}<div class="seq-item seq-q">?</div></div>`,
-    choices: opts.map(x => ({ render:emojiTile(x), correct:x===answer }))
+    stage:`<div class="sequence">${seq.map(x => `<div class="seq-item">${x}</div>`).join('')}<div class="seq-item seq-q">?</div></div>`,
+    choices: opts.map(x => ({render:emojiTile(x), correct:x === answer}))
   };
 }
 function uniqueNums(answer, n, lo, hi){
   const s = new Set([answer]);
   let guard = 0;
-  while (s.size < n && guard++ < 200){ const v = lo + rand(hi - lo + 1); s.add(v); }
+  while (s.size < n && guard++ < 200){ s.add(lo + rand(hi - lo + 1)); }
   return shuffle([...s]);
 }
-function objWord(e){
-  const map = {'🍎':'apples','🍌':'bananas','⭐':'stars','🐟':'fish','🌸':'flowers','🚗':'cars','🎈':'balloons','🐝':'bees','🍓':'strawberries','🦋':'butterflies'};
-  return map[e] || 'things';
+function objWord(e, n){
+  const map = {'🍎':['apple','apples'],'🍌':['banana','bananas'],'⭐':['star','stars'],'🐟':['fish','fish'],'🌸':['flower','flowers'],'🚗':['car','cars'],'🎈':['balloon','balloons'],'🐝':['bee','bees'],'🍓':['strawberry','strawberries'],'🦋':['butterfly','butterflies']};
+  const pair = map[e] || ['thing','things'];
+  return n === 1 ? pair[0] : pair[1];
 }
-function spokenDino(name){
-  return name === 'T-Rex' ? 'T Rex' : name;
-}
-function shade(hex, amt){ // lighten toward white by amt(0..1)
-  const c = hex.replace('#',''); const r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
-  const m = v => Math.round(v + (255-v)*amt).toString(16).padStart(2,'0');
+function spokenDino(name){ return name === 'T-Rex' ? 'T Rex' : name; }
+function shade(hex, amt){
+  const c = hex.replace('#','');
+  const r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+  const m = v => Math.round(v + (255 - v) * amt).toString(16).padStart(2,'0');
   return `#${m(r)}${m(g)}${m(b)}`;
+}
+function pile(emoji, n){
+  if (!n) return '<div class="objects"><span>🍽️</span></div>';
+  let s = '';
+  for (let i = 0; i < n; i++) s += '<span>' + emoji + '</span>';
+  return '<div class="objects">' + s + '</div>';
+}
+function sameTile(emoji, n){ return '<div class="same-tile">' + pile(emoji, n) + pile(emoji, n) + '</div>'; }
+function anyStep(say, choices){
+  choices.forEach(c => { c.correct = false; });
+  return { say, choices, any:true, noStar:true };
+}
+function face(kind){
+  const mouth = { happy:'M30 58 Q50 78 70 58', sad:'M30 72 Q50 52 70 72', mad:'M32 64 H68', scared:'M38 68 Q50 58 62 68', proud:'M32 60 Q50 74 68 60', surprised:'M43 60 h14 v14 h-14 z' };
+  const brow = kind === 'mad' ? '<path d="M28 32 L44 40 M72 32 L56 40" stroke="#3b2f2f" stroke-width="4" fill="none"/>' : '';
+  return `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#fde68a"/><circle cx="36" cy="44" r="5"/><circle cx="64" cy="44" r="5"/>${brow}<path d="${mouth[kind]}" stroke="#3b2f2f" stroke-width="4" fill="none"/></svg>`;
+}
+function scene(glyph, spot, prop){
+  return `<div class="scene sc-${spot} prop-${prop}"><b class="prop"></b><span class="glyph">${glyph}</span></div>`;
+}
+function nameChoices(target, total){
+  const avoid = { O:'CQGD', W:'MV', E:'F' };
+  const bad = avoid[target] || '';
+  const pool = LETTERS.filter(L => L !== target && bad.indexOf(L) < 0);
+  return shuffle([target].concat(sample(pool, total - 1))).map(L => ({render:letterTile(L), correct:L === target}));
+}
+function prepareLeft(){
+  const lookN = state.level === 'simple' ? 2 : 4;
+  const look = sample(ANIMALS, lookN);
+  const gone = pick(look);
+  const stay = look.filter(a => a !== gone);
+  const outsiders = ANIMALS.filter(a => look.indexOf(a) < 0);
+  const opts = shuffle([gone, ...sample(outsiders, lookN - 1)]);
+  const row = list => `<div class="sequence">${list.map(a => `<div class="seq-item">${a.emoji}</div>`).join('')}</div>`;
+  return {
+    lookStage: row(look),
+    stayStage: row(stay),
+    choices: opts.map(a => ({render:emojiTile(a.emoji), correct:a === gone, emoji:a.emoji, aname:a.name}))
+  };
+}
+function lightsRound(){
+  const i = state.step || 0;
+  if (i >= LIGHT_PATS.length) return { say:'All done.', check:true, noStar:true, reset:true, choices:[] };
+  const seq = LIGHT_PATS[i];
+  return {
+    say: 'Watch the lights. Your turn.',
+    stage:`<div class="sequence">${seq.map(c => `<div class="seq-item" style="background:${LIGHT_HEX[c]}"></div>`).join('')}</div>`,
+    sequence: seq.slice(),
+    choices: ['red','blue','yellow','green'].map(c => ({render:swatch(LIGHT_HEX[c]), value:c, correct:false}))
+  };
+}
+function animalChoice(names, answer){
+  return names.map(name => {
+    const a = ANIMALS.filter(x => x.name === name)[0];
+    return { render:emojiTile(a.emoji), correct:name === answer, aname:name };
+  });
+}
+function turnsRound(){
+  const i = state.step || 0;
+  if (i >= 8) return { say:'All done.', check:true, noStar:true, reset:true, choices:[] };
+  if (i === 0) return { say:"Owen's turn. Find the dog.", choices:animalChoice(['dog','cat','duck'], 'dog'), advanceStep:true };
+  if (i === 1) return { say:"Lucas's turn. Find the elephant.", choices:animalChoice(['elephant','bear','cow','pig'], 'elephant'), advanceStep:true };
+  if (i === 2) return { say:"Owen's turn. Find the sheep.", choices:animalChoice(['sheep','lion','frog'], 'sheep'), advanceStep:true };
+  if (i === 3) return { say:"Lucas's turn. How many fish?", stage:pile('🐟', 4), choices:[2,3,4,5].map(v => ({render:pile('🐟', v), correct:v === 4})), advanceStep:true };
+  if (i === 4) return { say:"Owen's turn. How many stars?", stage:pile('⭐', 2), choices:[1,2,3].map(v => ({render:pile('⭐', v), correct:v === 2})), advanceStep:true };
+  if (i === 5) return { say:"Lucas's turn. Find L.", choices:['L','T','M','A'].map(L => ({render:letterTile(L), correct:L === 'L'})), advanceStep:true };
+  if (i === 6) return { say:"Owen's turn. Find O.", choices:['O','A','T'].map(L => ({render:letterTile(L), correct:L === 'O'})), advanceStep:true };
+  return { say:"Lucas's turn. Three crackers. Eat one. How many are left?", stage:pile('🍪', 3), choices:[1,2,3,4].map(v => ({render:pile('🍪', v), correct:v === 2})), advanceStep:true };
+}
+function belongRound(){
+  const packs = [
+    () => oddShapes([['heart','#ef4444'],['star','#ef4444'],['circle','#ef4444'],['square','#3b82f6']], 3),
+    () => oddShapes([['circle','#facc15'],['heart','#facc15'],['star','#facc15'],['triangle','#22c55e']], 3),
+    () => oddShapes([['square','#f97316'],['star','#f97316'],['heart','#f97316'],['circle','#ec4899']], 3),
+    () => oddAnimals(['cow','pig','sheep','lion'], 'lion'),
+    () => oddAnimals(['duck','horse','cat','bear'], 'bear'),
+    () => oddAnimals(['dog','sheep','pig','monkey'], 'monkey'),
+    () => oddSize(true),
+    () => oddSize(false)
+  ];
+  return pick(packs)();
+}
+function oddShapes(list, oddIndex){
+  return { say:'Which one does not belong?', choices:shuffle(list.map((pair, i) => ({render:shapeSVG(pair[0], pair[1]), correct:i === oddIndex}))) };
+}
+function oddAnimals(names, oddName){
+  return { say:'Which one does not belong?', choices:shuffle(names.map(name => {
+    const a = ANIMALS.filter(x => x.name === name)[0];
+    return { render:emojiTile(a.emoji), correct:name === oddName };
+  })) };
+}
+function oddSize(bigIsOdd){
+  const sizes = bigIsOdd ? [28,28,28,64] : [64,64,64,24];
+  const odd = bigIsOdd ? 64 : 24;
+  return { say:'Which one does not belong?', choices:shuffle(sizes.map(sz => ({ render:`<span class="emoji" style="font-size:${sz}px">⭐</span>`, correct:sz === odd }))) };
 }
 
 /* =========================================================================
@@ -821,52 +1188,129 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
   document.body.classList.toggle('sparks-mode', id === 'sparks');
 }
+let roundGen = 0;
 function openCategory(id){
+  roundGen++;
   state.category = id;
+  state.step = 0;
+  state.bag = {};
+  state.seq = [];
+  state.misses = 0;
   showScreen('play');
   nextRound();
 }
-function nextRound(){
-  if (!state.category) return;
+function renderRound(round){
   state.locked = false;
-  const round = CATS[state.category].build();
+  state.misses = 0;
+  state.seq = [];
+  state.correctBtn = null;
   state.current = round;
-
-  // stage (optional visual above the choices)
   $('#stage').innerHTML = round.stage || '';
-
-  // choices
   const wrap = $('#choices');
-  wrap.className = 'choices' + (round.choices.length === 3 ? ' three' : '');
+  const list = round.choices || [];
+  const n = list.length || (round.check ? 1 : 0);
+  wrap.className = 'choices' + (n === 3 ? ' three' : (n === 1 ? ' one' : ''));
   wrap.innerHTML = '';
-  round.choices.forEach(ch => {
+  list.forEach(ch => {
     const b = document.createElement('button');
     b.className = 'choice';
     b.innerHTML = ch.render;
+    if (ch.value != null) b.dataset.value = String(ch.value);
+    b.dataset.correct = ch.correct ? '1' : '0';
+    if (ch.correct) state.correctBtn = b;
     b.onclick = () => onChoice(b, ch);
     wrap.appendChild(b);
   });
-
+  if (round.check && !list.length){
+    const b = document.createElement('button');
+    b.className = 'choice check-go';
+    b.innerHTML = '<span class="emoji">✅</span>';
+    b.dataset.correct = '0';
+    b.onclick = () => onCheck();
+    wrap.appendChild(b);
+  }
   setTimeout(() => {
-    speak(round.say);
-    if (round.sound) setTimeout(() => playAnimal(round.sound), 750);  // play the real recording after the question
+    speak(round.say || '');
+    if (round.sound) setTimeout(() => playAnimal(round.sound), 750);
   }, 250);
+}
+function nextRound(){
+  if (!state.category) return;
+  renderRound(CATS[state.category].build());
+}
+function onCheck(){
+  const round = state.current || {};
+  if (round.dino && state.seen.indexOf(round.dino) < 0) state.seen.push(round.dino);
+  if (round.onCheck) round.onCheck();
+  if (round.reset) state.step = 0;
+  else if (!round.holdStep) state.step = (state.step || 0) + 1;
+  save();
+  nextRound();
+}
+function onAny(ch){
+  state.bag[ch.key] = ch.value;
+  state.step = (state.step || 0) + 1;
+  nextRound();
+}
+function onSequence(ch, round){
+  state.seq = state.seq || [];
+  state.seq.push(ch.value);
+  const need = round.sequence;
+  const i = state.seq.length - 1;
+  if (ch.value !== need[i]){
+    state.misses++;
+    state.seq = [];
+    if (state.misses >= 2){ state.step++; state.misses = 0; nextRound(); }
+    return;
+  }
+  if (state.seq.length === need.length){
+    addStar();
+    state.step++;
+    state.seq = [];
+    state.misses = 0;
+    nextRound();
+  }
 }
 function onChoice(btn, ch){
   if (state.locked) return;
+  const round = state.current || {};
+  if (round.sequence) return onSequence(ch, round);
+  if (round.any) return onAny(ch);
   if (ch.correct){
     state.locked = true;
     btn.classList.add('correct');
-    sfxGood();           // sound effect only — no spoken praise (keeps it from getting annoying)
-    if (state.category === 'animals' && ch.aname) setTimeout(() => playAnimal(ch.aname), 350); // reward: hear the animal
-    addStar();
-    celebrate();
-    setTimeout(nextRound, 1500);
-  } else {
-    btn.classList.add('wrong');
-    sfxWrong();          // gentle sound effect only — no spoken "try again"
-    setTimeout(() => btn.classList.remove('wrong'), 450);
+    sfxGood();
+    if (!round.noStar){ addStar(); celebrate(); }
+    if (state.category === 'animals' && ch.aname) setTimeout(() => playAnimal(ch.aname), 350);
+    if (round.follow){
+      state.locked = false;
+      renderRound({ say:round.follow, choices:[], check:true, noStar:true, holdStep:true, stage:'' });
+      return;
+    }
+    const gen = roundGen;
+    const go = () => {
+      if (gen !== roundGen) return;
+      if (round.advanceStep) state.step++;
+      nextRound();
+    };
+    if (round.praiseSay) setTimeout(() => { if (gen === roundGen) speak(round.praiseSay); }, 250);
+    if (round.noStar) go();
+    else setTimeout(go, 1100);
+    return;
   }
+  state.misses++;
+  btn.classList.add('wrong');
+  sfxWrong();
+  if (state.misses >= 2 && state.correctBtn) state.correctBtn.classList.add('hint');
+  if (round.replayOnMiss && state.misses === 1) speak(round.say);
+  setTimeout(() => btn.classList.remove('wrong'), 450);
+}
+function addStar(){
+  state.stars++;
+  if (!state.starBank) state.starBank = { simple:0, complex:0 };
+  state.starBank[state.level] = state.stars;
+  $('#starCount').textContent = state.stars;
+  save();
 }
 
 /* ---------- rewards ---------- */
@@ -961,8 +1405,20 @@ const SPARKS = [
   "What's a place you'd love for us to visit?",
   "What was the funniest thing that happened today?",
 ];
+const NIGHT = [
+  "Who gets a goodnight hug?",
+  "What was a gentle part of today?",
+  "Which toy should sleep beside you?",
+  "What do you want to dream about?",
+  "What soft sound do you hear?",
+  "Who made you smile today?",
+  "What should we thank the day for?",
+  "Are you cozy?"
+];
+let sparkKind = 'day';
 let sparkDeck = [], sparkIdx = 0;
-function refillSparks(){ sparkDeck = shuffle(SPARKS); sparkIdx = 0; }
+function refillSparks(){ sparkDeck = shuffle(sparkKind === 'night' ? NIGHT : SPARKS); sparkIdx = 0; }
+function setSparkKind(kind){ sparkKind = kind === 'night' ? 'night' : 'day'; refillSparks(); showSpark(); }
 function showSpark(){
   if ('speechSynthesis' in window) speechSynthesis.cancel();  // don't carry a previous question's speech over
   if (sparkIdx >= sparkDeck.length) refillSparks();
@@ -975,9 +1431,10 @@ $('#sparksEntry').onclick = openSparks;
 $('#sparkNext').onclick = nextSpark;
 $('#sparkCard').onclick = nextSpark;          // tapping the card also advances
 $('#sparkListen').onclick = () => speak(sparkDeck[sparkIdx]);   // speak only on request
+$('#sparkMoon').onclick = () => setSparkKind(sparkKind === 'night' ? 'day' : 'night');
 
 /* ---------- controls ---------- */
-$('#homeBtn').onclick = () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); state.category = null; showScreen('home'); };
+$('#homeBtn').onclick = () => { roundGen++; if ('speechSynthesis' in window) speechSynthesis.cancel(); state.category = null; showScreen('home'); };
 $('#replay').onclick = () => {
   if (!state.current) return;
   speak(state.current.say);
@@ -988,12 +1445,20 @@ $('#replay').onclick = () => {
 const toggleBtns = $('#toggle').querySelectorAll('button');
 let holdTimer = null;
 function setLevel(b){
+  roundGen++;
+  if (!state.starBank) state.starBank = { simple:0, complex:0 };
+  state.starBank[state.level] = state.stars;
   state.level = b.dataset.level;
+  state.stars = state.starBank[state.level] || 0;
   toggleBtns.forEach(x => x.classList.toggle('on', x === b));
-  buildHome();                         // re-filter categories for the selected child
+  $('#starCount').textContent = state.stars;
+  save();
+  buildHome();
   if (state.category){
-    if (allowed(CATS[state.category])) nextRound();      // re-roll at new difficulty
-    else { state.category = null; showScreen('home'); }  // category not for this child → home
+    state.step = 0;
+    state.bag = {};
+    if (allowed(CATS[state.category])) nextRound();
+    else { state.category = null; showScreen('home'); }
   }
 }
 function showHoldHint(){
@@ -1034,6 +1499,9 @@ $('#startBtn').onclick = () => {
   $('#start').classList.add('hidden');
 };
 
+loadSave();
+toggleBtns.forEach(x => x.classList.toggle('on', x.dataset.level === state.level));
+$('#starCount').textContent = state.stars;
 buildHome();
 </script>
 <!-- === ANIMAL SOUND CREDITS (sourced from Wikimedia Commons) ===
