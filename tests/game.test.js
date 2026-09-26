@@ -24,7 +24,7 @@ function wrongBtn(g){
 }
 function settle(g){
   let guard = 0;
-  while (g.sandbox._later.length && guard++ < 40) g.sandbox._later.shift()();
+  while (g.sandbox._later.length && guard++ < 40) g.sandbox._later.shift().fn();
 }
 function pastLook(g){
   if (g.play.state.current && /^Look/.test(g.play.state.current.say)){
@@ -99,6 +99,9 @@ test('Lucas counts big pictures, takes away, and compares closer piles', () => {
   assert.match(same.say, /Tap same if they match/);
   assert.equal(same.choices.filter(c => c.correct).length, 1);
   assert.match(same.choices.find(c => c.correct).render, /same-tile/);
+  const sameWrongs = same.choices.filter(c => !c.correct).map(c => c.render);
+  assert.equal(sameWrongs.length, 2);
+  assert.notEqual(sameWrongs[0], sameWrongs[1]);
 });
 
 test('Owen counts, finds numbers, and compares very different piles', () => {
@@ -177,6 +180,15 @@ test('the phone remembers each boy and who played last', () => {
   const g2 = fresh(storage);
   assert.equal(g2.play.state.level, 'complex');
   assert.equal(g2.play.state.stars, 1);
+  const saved = memoryStorage();
+  const g3 = fresh(saved);
+  g3.play.state.level = 'simple';
+  g3.play.state.stars = 0;
+  g3.play.state.starBank = { simple: 0, complex: 0 };
+  g3.play.addStar();
+  const g4 = fresh(saved);
+  assert.equal(g4.play.state.level, 'simple');
+  assert.equal(g4.play.state.stars, 1);
   g2.play.setLevel(g2.ids.toggle._buttons[0]);
   assert.equal(g2.play.state.stars, 2);
 });
@@ -280,7 +292,14 @@ test('Who left and copy the lights', () => {
     g.ids.choices.children.find(b => b.dataset.value === color).onclick();
   });
   assert.equal(g.play.state.stars, 1);
+  settle(g);
   assert.equal(g.play.state.current.sequence.length, 3);
+  const seq = g.play.state.current.sequence.slice();
+  const miss = ['red','blue','yellow','green'].find(c => c !== seq[0]);
+  const missBtn = g.ids.choices.children.find(b => b.dataset.value === miss);
+  missBtn.onclick();
+  assert.equal(missBtn.classList.contains('wrong'), true);
+  assert.equal(g.play.state.stars, 1);
 });
 
 test('Feelings: Owen taps a face, Lucas gets a story then talk', () => {
@@ -335,7 +354,11 @@ test('Dino museum is a tour without stars', () => {
   assert.match(g.play.state.current.say, /Brack ee oh sore us/);
   assert.match(g.play.state.current.say, /plants/);
   assert.equal(g.play.state.current.noStar, true);
-  for (let i = 0; i < 6; i++) g.ids.choices.children[0].onclick();
+  for (let i = 0; i < 5; i++) g.ids.choices.children[0].onclick();
+  assert.match(g.play.state.current.say, /sharp claws/);
+  assert.match(g.play.state.current.say, /rapter/);
+  assert.doesNotMatch(g.play.state.current.say, /this raptor/i);
+  g.ids.choices.children[0].onclick();
   assert.equal(g.play.state.stars, 0);
   assert.match(g.play.state.current.say, /long neck/);
   assert.match(g.play.state.current.stage, /seen/);
@@ -355,6 +378,8 @@ test('Turns alternate and stay inside what each boy can do', () => {
   }
   assert.match(says[0], /Owen's turn/);
   assert.match(says[1], /Lucas's turn/);
+  assert.match(says[7], /cookies/);
+  assert.doesNotMatch(says[7], /cracker/);
   assert.match(g.play.state.current.say, /All done/);
 });
 
@@ -373,6 +398,25 @@ test('Rhymes, odd one out, and places', () => {
   const place = open(g, 'places', 'simple', null);
   assert.match(place.say, /in the|on the|under the/);
   assert.equal(place.choices.length, 3);
+});
+
+test('going home stops the old question', () => {
+  const g = fresh();
+  const heard = [];
+  g.sandbox.speak = t => heard.push(t);
+  open(g, 'colors', 'simple', null);
+  const say = g.play.state.current.say;
+  g.ids.homeBtn.onclick();
+  settle(g);
+  assert.equal(heard.includes(say), false);
+});
+
+test('the dinosaur name has time to finish', () => {
+  const g = fresh();
+  open(g, 'dinos', 'simple', null);
+  correctBtn(g).onclick();
+  const waits = g.sandbox._later.map(t => t.ms);
+  assert.ok(waits.some(ms => ms >= 2400));
 });
 
 test('leaving during the cheer does not skip the next game', () => {

@@ -213,6 +213,7 @@
 
   /* count objects grid */
   .objects{display:flex; flex-wrap:wrap; justify-content:center; gap:6px; max-width:320px;}
+  .objects.empty{min-width:72px; min-height:72px; border:3px dashed #d6d3d1; border-radius:16px;}
   .objects span{font-size:40px; line-height:1;}
 
   /* ---------- Celebration ---------- */
@@ -298,7 +299,7 @@
 <!-- START GATE (unlocks audio on first tap) -->
 <div id="start">
   <h1>🦖 Play &amp; Learn 🎨</h1>
-  <div class="sub">Numbers • Colors • Shapes • Letters • Animals • Dinos</div>
+  <div class="sub">Tap Start, then tap a picture.</div>
   <button class="start-btn" id="startBtn">▶️ Start</button>
 </div>
 
@@ -627,7 +628,7 @@ const MUSEUM = [
   {name:'Stegosaurus', look:'Look at the plates on its back.', fact:'It ate plants.'},
   {name:'Triceratops', look:'Look at the three horns.', fact:'It ate plants.'},
   {name:'Pterodactyl', look:'Look at the wings.', fact:'It could fly.'},
-  {name:'Raptor', look:'Look at this raptor.', fact:'It ate meat.'}
+  {name:'Raptor', look:'Look at the sharp claws.', fact:'It ate meat.'}
 ];
 const MOVE_OWEN = [
   ['Reach up high.','🙆'],['Touch your toes.','🦶'],['Jump. Jump.','🦘'],['Spin around.','🔄'],
@@ -735,7 +736,7 @@ const CATS = {
           praiseSay:'Same. They both have ' + numWord(k) + '.',
           choices: shuffle([
             {render:pile(obj, k), correct:false},
-            {render:pile(obj, k), correct:false},
+            {render:mismatchTile(obj, k), correct:false},
             {render:sameTile(obj, k), correct:true}
           ])
         };
@@ -1074,12 +1075,13 @@ function shade(hex, amt){
   return `#${m(r)}${m(g)}${m(b)}`;
 }
 function pile(emoji, n){
-  if (!n) return '<div class="objects"><span>🍽️</span></div>';
+  if (!n) return '<div class="objects empty"></div>';
   let s = '';
   for (let i = 0; i < n; i++) s += '<span>' + emoji + '</span>';
   return '<div class="objects">' + s + '</div>';
 }
 function sameTile(emoji, n){ return '<div class="same-tile">' + pile(emoji, n) + pile(emoji, n) + '</div>'; }
+function mismatchTile(emoji, n){ return '<div class="same-tile">' + pile(emoji, n) + pile(emoji, Math.max(1, n - 1)) + '</div>'; }
 function anyStep(say, choices){
   choices.forEach(c => { c.correct = false; });
   return { say, choices, any:true, noStar:true };
@@ -1139,7 +1141,7 @@ function turnsRound(){
   if (i === 4) return { say:"Owen's turn. How many stars?", stage:pile('⭐', 2), choices:[1,2,3].map(v => ({render:pile('⭐', v), correct:v === 2})), advanceStep:true };
   if (i === 5) return { say:"Lucas's turn. Find L.", choices:['L','T','M','A'].map(L => ({render:letterTile(L), correct:L === 'L'})), advanceStep:true };
   if (i === 6) return { say:"Owen's turn. Find O.", choices:['O','A','T'].map(L => ({render:letterTile(L), correct:L === 'O'})), advanceStep:true };
-  return { say:"Lucas's turn. Three crackers. Eat one. How many are left?", stage:pile('🍪', 3), choices:[1,2,3,4].map(v => ({render:pile('🍪', v), correct:v === 2})), advanceStep:true };
+  return { say:"Lucas's turn. Three cookies. Eat one. How many are left?", stage:pile('🍪', 3), choices:[1,2,3,4].map(v => ({render:pile('🍪', v), correct:v === 2})), advanceStep:true };
 }
 function belongRound(){
   const packs = [
@@ -1229,9 +1231,11 @@ function renderRound(round){
     b.onclick = () => onCheck();
     wrap.appendChild(b);
   }
+  const gen = roundGen;
   setTimeout(() => {
+    if (gen !== roundGen) return;
     speak(round.say || '');
-    if (round.sound) setTimeout(() => playAnimal(round.sound), 750);
+    if (round.sound) setTimeout(() => { if (gen === roundGen) playAnimal(round.sound); }, 750);
   }, 250);
 }
 function nextRound(){
@@ -1252,7 +1256,8 @@ function onAny(ch){
   state.step = (state.step || 0) + 1;
   nextRound();
 }
-function onSequence(ch, round){
+function onSequence(btn, ch, round){
+  if (state.locked) return;
   state.seq = state.seq || [];
   state.seq.push(ch.value);
   const need = round.sequence;
@@ -1260,28 +1265,47 @@ function onSequence(ch, round){
   if (ch.value !== need[i]){
     state.misses++;
     state.seq = [];
-    if (state.misses >= 2){ state.step++; state.misses = 0; nextRound(); }
+    btn.classList.add('wrong');
+    sfxWrong();
+    setTimeout(() => btn.classList.remove('wrong'), 450);
+    if (state.misses >= 2){
+      const gen = roundGen;
+      setTimeout(() => {
+        if (gen !== roundGen) return;
+        state.step++;
+        state.misses = 0;
+        nextRound();
+      }, 500);
+    }
     return;
   }
+  btn.classList.add('correct');
   if (state.seq.length === need.length){
+    state.locked = true;
+    sfxGood();
     addStar();
+    celebrate();
     state.step++;
     state.seq = [];
     state.misses = 0;
-    nextRound();
+    const gen = roundGen;
+    setTimeout(() => { if (gen === roundGen) nextRound(); }, 1100);
   }
 }
 function onChoice(btn, ch){
   if (state.locked) return;
   const round = state.current || {};
-  if (round.sequence) return onSequence(ch, round);
+  if (round.sequence) return onSequence(btn, ch, round);
   if (round.any) return onAny(ch);
   if (ch.correct){
     state.locked = true;
     btn.classList.add('correct');
     sfxGood();
     if (!round.noStar){ addStar(); celebrate(); }
-    if (state.category === 'animals' && ch.aname) setTimeout(() => playAnimal(ch.aname), 350);
+    if (state.category === 'animals' && ch.aname){
+      const agen = roundGen;
+      setTimeout(() => { if (agen === roundGen) playAnimal(ch.aname); }, 350);
+    }
     if (round.follow){
       state.locked = false;
       renderRound({ say:round.follow, choices:[], check:true, noStar:true, holdStep:true, stage:'' });
@@ -1293,8 +1317,11 @@ function onChoice(btn, ch){
       if (round.advanceStep) state.step++;
       nextRound();
     };
-    if (round.praiseSay) setTimeout(() => { if (gen === roundGen) speak(round.praiseSay); }, 250);
-    if (round.noStar) go();
+    if (round.praiseSay){
+      setTimeout(() => { if (gen === roundGen) speak(round.praiseSay); }, 250);
+      const words = round.praiseSay.split(/\s+/).filter(Boolean).length;
+      setTimeout(go, 250 + Math.max(2400, words * 600));
+    } else if (round.noStar) go();
     else setTimeout(go, 1100);
     return;
   }
@@ -1314,7 +1341,6 @@ function addStar(){
 }
 
 /* ---------- rewards ---------- */
-function addStar(){ state.stars++; $('#starCount').textContent = state.stars; }
 function celebrate(){
   const c = $('#confetti');
   const pieces = ['🎉','⭐','🌟','✨','🎈','🦖','🟡','🔵'];
@@ -1437,8 +1463,9 @@ $('#sparkMoon').onclick = () => setSparkKind(sparkKind === 'night' ? 'day' : 'ni
 $('#homeBtn').onclick = () => { roundGen++; if ('speechSynthesis' in window) speechSynthesis.cancel(); state.category = null; showScreen('home'); };
 $('#replay').onclick = () => {
   if (!state.current) return;
+  const gen = roundGen;
   speak(state.current.say);
-  if (state.current.sound) setTimeout(() => playAnimal(state.current.sound), 750);
+  if (state.current.sound) setTimeout(() => { if (gen === roundGen) playAnimal(state.current.sound); }, 750);
 };
 /* Owen/Lucas switch: a simple tap on the home screen, but a press-and-hold
    while inside a category so a child can't flip it mid-game by accident. */

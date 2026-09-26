@@ -81,7 +81,7 @@ function loadGame(opts){
     document,
     location: { hash: '' },
     console,
-    setTimeout: fn => { sandbox._later.push(fn); return sandbox._later.length; },
+    setTimeout: (fn, ms) => { sandbox._later.push({ fn, ms: ms || 0 }); return sandbox._later.length; },
     clearTimeout(){},
     clearInterval(){},
     setInterval(){ return 0; },

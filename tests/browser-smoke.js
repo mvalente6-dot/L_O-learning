@@ -36,6 +36,11 @@ async function run(width, height, label){
   await wrong.click();
   const hinted = await page.locator('#choices .choice.hint').count();
   if (hinted !== 1) throw new Error(label + ' hint missing ' + hinted);
+  await page.locator('#choices .choice[data-correct="1"]').click();
+  if (await page.locator('#starCount').textContent() !== '1') throw new Error(label + ' star did not show');
+  await page.reload();
+  await page.click('#startBtn');
+  if (await page.locator('#starCount').textContent() !== '1') throw new Error(label + ' star was forgotten');
   await page.click('#homeBtn');
   await page.locator('#toggle button.complex').click();
   const lucasTiles = await page.locator('#catGrid .lbl').allTextContents();
