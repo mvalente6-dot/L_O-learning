@@ -36,7 +36,7 @@ async function run(width, height, label){
   await wrong.click();
   const hinted = await page.locator('#choices .choice.hint').count();
   if (hinted !== 1) throw new Error(label + ' hint missing ' + hinted);
-  await page.locator('#choices .choice[data-correct="1"]').click();
+  await page.locator('#choices .choice[data-correct="1"]').click({ force: true });
   if (await page.locator('#starCount').textContent() !== '1') throw new Error(label + ' star did not show');
   await page.reload();
   await page.click('#startBtn');
@@ -52,6 +52,8 @@ async function run(width, height, label){
   await page.click('#sparkMoon');
   const night = (await page.locator('#sparkText').textContent()).trim();
   if (!NIGHT.includes(night)) throw new Error(label + ' night text: ' + night);
+  const progress = (await page.locator('#sparkProgress').textContent()).trim();
+  if (progress !== '1 / 8') throw new Error(label + ' night progress ' + progress);
   const shot = path.join('/tmp', 'play-' + label + '.png');
   await page.screenshot({ path: shot, fullPage: true });
   await browser.close();
