@@ -696,7 +696,7 @@ const CATS = {
           const answer = 1 + rand(5);
           return {
             say:`Count the ${objWord(obj)}. How many are there?`,
-            stage:`<div class="objects">${('<span>'+obj+'</span>').repeat(answer)}</div>`,
+            stage:pile(obj, answer),
             choices: numChoices(uniqueNums(answer, n, 1, 5), answer)
           };
         }
@@ -709,7 +709,7 @@ const CATS = {
         const obj = pick(COUNT_OBJECTS);
         return {
           say:`How many ${objWord(obj)}?`,
-          stage:`<div class="objects">${('<span>'+obj+'</span>').repeat(answer)}</div>`,
+          stage:pile(obj, answer),
           choices: numChoices(uniqueNums(answer, n, 1, 10), answer)
         };
       }
@@ -732,10 +732,10 @@ const CATS = {
         const obj = pick(COUNT_OBJECTS);
         const k = 2 + rand(2);
         return {
-          say:'Which pile has more? Tap same if they match.',
+          say:'Tap same if they match.',
           praiseSay:'Same. They both have ' + numWord(k) + '.',
           choices: shuffle([
-            {render:pile(obj, k), correct:false},
+            {render:'<div class="same-tile">' + pile(obj, k) + '</div>', correct:false},
             {render:mismatchTile(obj, k), correct:false},
             {render:sameTile(obj, k), correct:true}
           ])
@@ -788,7 +788,7 @@ const CATS = {
         const basic = ['circle','square','triangle','star','heart'];
         const set = sample(basic, n);
         const target = pick(set);
-        const col = pick(COLORS).hex;
+        const col = pick(COLORS.filter(c => c.name !== 'white')).hex;
         return { say:`Find the ${target}.`, choices: set.map(s => ({render:shapeSVG(s, col), correct:s === target})) };
       }
       const sided = names.filter(s => SHAPE_SIDES[s] > 0);
@@ -796,7 +796,7 @@ const CATS = {
       const sides = SHAPE_SIDES[target];
       const distractors = sample(names.filter(s => SHAPE_SIDES[s] !== sides), n - 1);
       const set = shuffle([target, ...distractors]);
-      const col = pick(COLORS).hex;
+      const col = pick(COLORS.filter(c => c.name !== 'white')).hex;
       return { say:`Which shape has ${sides} sides?`, choices: set.map(s => ({render:shapeSVG(s, col), correct:s === target})) };
     }
   },
@@ -930,7 +930,10 @@ const CATS = {
   wholeft: {
     label:'Who left', icon:'👀', color:'#64748b',
     build(){
-      if (state.level !== 'simple' && roll(['left','lights']) === 'lights') return lightsRound();
+      if (state.level !== 'simple'){
+        if (!state.bag.game) state.bag.game = roll(['left','lights']);
+        if (state.bag.game === 'lights') return lightsRound();
+      }
       if (!state.bag.looked){
         state.bag.prepared = prepareLeft();
         return {
@@ -1191,6 +1194,9 @@ function showScreen(id){
   document.body.classList.toggle('sparks-mode', id === 'sparks');
 }
 let roundGen = 0;
+let tapLock = 0, tapGuard = -1;
+function skipExtraTap(e){ return !!(e && e.type) && Date.now() < tapLock && roundGen === tapGuard; }
+function lockExtraTap(){ tapLock = Date.now() + 350; tapGuard = roundGen; }
 function openCategory(id){
   roundGen++;
   state.category = id;
@@ -1202,6 +1208,8 @@ function openCategory(id){
   nextRound();
 }
 function renderRound(round){
+  roundGen++;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
   state.locked = false;
   state.misses = 0;
   state.seq = [];
@@ -1220,7 +1228,7 @@ function renderRound(round){
     if (ch.value != null) b.dataset.value = String(ch.value);
     b.dataset.correct = ch.correct ? '1' : '0';
     if (ch.correct) state.correctBtn = b;
-    b.onclick = () => onChoice(b, ch);
+    b.onclick = e => onChoice(b, ch, e);
     wrap.appendChild(b);
   });
   if (round.check && !list.length){
@@ -1228,7 +1236,7 @@ function renderRound(round){
     b.className = 'choice check-go';
     b.innerHTML = '<span class="emoji">✅</span>';
     b.dataset.correct = '0';
-    b.onclick = () => onCheck();
+    b.onclick = e => onCheck(e);
     wrap.appendChild(b);
   }
   const gen = roundGen;
@@ -1242,7 +1250,8 @@ function nextRound(){
   if (!state.category) return;
   renderRound(CATS[state.category].build());
 }
-function onCheck(){
+function onCheck(e){
+  if (skipExtraTap(e)) return;
   const round = state.current || {};
   if (round.dino && state.seen.indexOf(round.dino) < 0) state.seen.push(round.dino);
   if (round.onCheck) round.onCheck();
@@ -1250,11 +1259,13 @@ function onCheck(){
   else if (!round.holdStep) state.step = (state.step || 0) + 1;
   save();
   nextRound();
+  lockExtraTap();
 }
 function onAny(ch){
   state.bag[ch.key] = ch.value;
   state.step = (state.step || 0) + 1;
   nextRound();
+  lockExtraTap();
 }
 function onSequence(btn, ch, round){
   if (state.locked) return;
@@ -1265,10 +1276,13 @@ function onSequence(btn, ch, round){
   if (ch.value !== need[i]){
     state.misses++;
     state.seq = [];
+    const marks = $('#choices').children;
+    for (let m = 0; m < marks.length; m++) marks[m].classList.remove('correct');
     btn.classList.add('wrong');
     sfxWrong();
     setTimeout(() => btn.classList.remove('wrong'), 450);
     if (state.misses >= 2){
+      state.locked = true;
       const gen = roundGen;
       setTimeout(() => {
         if (gen !== roundGen) return;
@@ -1292,8 +1306,8 @@ function onSequence(btn, ch, round){
     setTimeout(() => { if (gen === roundGen) nextRound(); }, 1100);
   }
 }
-function onChoice(btn, ch){
-  if (state.locked) return;
+function onChoice(btn, ch, e){
+  if (skipExtraTap(e) || state.locked) return;
   const round = state.current || {};
   if (round.sequence) return onSequence(btn, ch, round);
   if (round.any) return onAny(ch);
@@ -1309,6 +1323,7 @@ function onChoice(btn, ch){
     if (round.follow){
       state.locked = false;
       renderRound({ say:round.follow, choices:[], check:true, noStar:true, holdStep:true, stage:'' });
+      lockExtraTap();
       return;
     }
     const gen = roundGen;
@@ -1334,8 +1349,6 @@ function onChoice(btn, ch){
 }
 function addStar(){
   state.stars++;
-  if (!state.starBank) state.starBank = { simple:0, complex:0 };
-  state.starBank[state.level] = state.stars;
   $('#starCount').textContent = state.stars;
   save();
 }
@@ -1473,6 +1486,7 @@ const toggleBtns = $('#toggle').querySelectorAll('button');
 let holdTimer = null;
 function setLevel(b){
   roundGen++;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
   if (!state.starBank) state.starBank = { simple:0, complex:0 };
   state.starBank[state.level] = state.stars;
   state.level = b.dataset.level;

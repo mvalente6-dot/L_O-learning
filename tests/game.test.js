@@ -94,9 +94,9 @@ test('Lucas counts big pictures, takes away, and compares closer piles', () => {
   assert.match(take.say, /How many are left/);
   assert.equal(take.choices.filter(c => c.correct).length, 1);
   const more = open(g, 'numbers', 'complex', 'more');
-  assert.match(more.say, /Which has more|Which has less|Tap same if they match/);
+  assert.match(more.say, /Which has more/);
   const same = open(g, 'numbers', 'complex', 'same');
-  assert.match(same.say, /Tap same if they match/);
+  assert.equal(same.say, 'Tap same if they match.');
   assert.equal(same.choices.filter(c => c.correct).length, 1);
   assert.match(same.choices.find(c => c.correct).render, /same-tile/);
   const sameWrongs = same.choices.filter(c => !c.correct).map(c => c.render);
@@ -274,6 +274,29 @@ test('Silly animal has no wrong answer', () => {
   assert.match(g.play.state.current.say, /with a (party hat|sun hat|winter hat)/);
 });
 
+test('shapes stay visible on the white card', () => {
+  const g = fresh();
+  for (const level of ['simple', 'complex']){
+    for (let i = 0; i < 30; i++){
+      open(g, 'shapes', level, null).choices.forEach(c => {
+        assert.doesNotMatch(c.render, /#ffffff/i);
+      });
+    }
+  }
+});
+
+test('a second tap does not skip, and the old line stops', () => {
+  const g = fresh();
+  open(g, 'move', 'simple', null);
+  const heard = [];
+  g.sandbox.speak = t => heard.push(t);
+  g.ids.choices.children[0].onclick({ type:'click' });
+  g.ids.choices.children[0].onclick({ type:'click' });
+  assert.match(g.play.state.current.say, /Touch your toes/);
+  settle(g);
+  assert.deepEqual(heard, ['Touch your toes.']);
+});
+
 test('Who left and copy the lights', () => {
   const g = fresh();
   open(g, 'wholeft', 'simple', 'left');
@@ -300,6 +323,18 @@ test('Who left and copy the lights', () => {
   missBtn.onclick();
   assert.equal(missBtn.classList.contains('wrong'), true);
   assert.equal(g.play.state.stars, 1);
+  g.play.state.mode = 'left';
+  g.play.nextRound();
+  assert.equal(g.play.state.current.sequence.length, 3);
+  const good = g.ids.choices.children.find(b => b.dataset.value === g.play.state.current.sequence[0]);
+  good.onclick();
+  const bad = g.ids.choices.children.find(b => b.dataset.value !== g.play.state.current.sequence[0]);
+  bad.onclick();
+  assert.equal(good.classList.contains('correct'), false);
+  bad.onclick();
+  bad.onclick();
+  settle(g);
+  assert.equal(g.play.state.current.sequence.length, 4);
 });
 
 test('Feelings: Owen taps a face, Lucas gets a story then talk', () => {
