@@ -67,7 +67,7 @@ function loadGame(opts){
   const lucas = makeEl('button');
   lucas.dataset.level = 'complex';
   lucas.className = 'complex';
-  ids.toggle._buttons = [owen, lucas];
+  ids.toggle._buttons = [lucas, owen];
   const screens = [ids.home, ids.sparks, ids.play];
   const body = makeEl('body');
   const document = {

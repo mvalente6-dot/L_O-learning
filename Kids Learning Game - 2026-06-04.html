@@ -192,6 +192,12 @@
   @keyframes hintpulse{50%{transform:scale(1.04)}}
   .choices.one{grid-template-columns:1fr;}
   .move-pic{font-size:120px;line-height:1;}
+  .silly-pic{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:.9;gap:4px;}
+  .silly-pic b{font-size:min(12vw,64px);font-weight:normal;}
+  .who-row{gap:14px;}
+  .who-row .seq-item{width:96px;height:96px;font-size:64px;border-radius:22px;}
+  .who-gone{border:4px dashed #c4b5a8;background:#f6f1eb;box-shadow:none;animation:whohole 1.1s ease-in-out infinite;}
+  @keyframes whohole{50%{transform:scale(.9);opacity:.55}}
   .dino-big svg{width:min(72vw,280px);height:auto;}
   .seen{width:18px;height:18px;border-radius:50%;background:#22c55e;margin:8px auto 0;color:transparent;font-size:0;}
   .same-tile{display:flex;align-items:center;gap:8px;justify-content:center;}
@@ -253,8 +259,8 @@
   <header>
     <button class="bar-btn" id="homeBtn" title="Home">🏠</button>
     <div class="toggle" id="toggle">
-      <button class="simple on" data-level="simple">Owen</button>
       <button class="complex" data-level="complex">Lucas</button>
+      <button class="simple on" data-level="simple">Owen</button>
     </div>
     <div id="holdHint">Hold to switch 🔒</div>
     <div class="spacer"></div>
@@ -320,7 +326,7 @@ const sample = (a, n) => shuffle(a).slice(0, n);
 const pick = a => a[rand(a.length)];
 
 /* ---------- state ---------- */
-const state = { level:'simple', category:null, stars:0, current:null, locked:false, step:0, bag:{}, misses:0, mode:null, starBank:{simple:0, complex:0}, seen:[], seq:[] };
+const state = { level:'simple', category:null, stars:0, current:null, locked:false, step:0, bag:{}, misses:0, mode:null, starBank:{simple:0, complex:0}, seen:[] };
 
 /* ---------- speech ---------- */
 let voice = null;
@@ -335,13 +341,14 @@ function loadVoice(){
   const qual = v => /premium|enhanced|neural/i.test(tag(v)) ? 2 : /compact/i.test(tag(v)) ? 0 : 1;
   const best = (pool, re) => pool.filter(v => re.test(tag(v))).sort((a,b) => qual(b) - qual(a))[0];
   const NAMES = /samantha|ava|allison|susan|karen|moira|tessa|nicky|zoe|joelle|noelle|ivy|salli|joanna|kendra|kimberly|justin|google us|zira|female/i;
-  // tier 1: any premium/enhanced/neural/siri voice (downloaded "Enhanced" voices match via voiceURI), best quality first
-  voice = best(enUS, /premium|enhanced|neural|siri/i)
-       || best(en,   /premium|enhanced|neural|siri/i)
-  // tier 2: known-good natural voices by name, preferring the highest-quality variant
+  const full = pool => pool.filter(v => !/compact/i.test(tag(v)));
+  // Skip compact voices first. A compact Siri voice sounds flat and was beating the warmer named voices.
+  voice = best(full(enUS), /premium|enhanced|neural|siri/i)
+       || best(full(en),   /premium|enhanced|neural|siri/i)
+       || best(full(enUS), NAMES)
+       || best(full(en),   NAMES)
        || best(enUS, NAMES)
        || best(en,   NAMES)
-  // tier 3: any en-US, then any en-*, then first available
        || enUS[0] || en[0] || vs[0] || null;
   if (location.hash === '#voices') showVoices(vs);
 }
@@ -358,13 +365,26 @@ if ('speechSynthesis' in window){
   speechSynthesis.onvoiceschanged = loadVoice;
 }
 if (location.hash === '#tune') showTune();
-function speak(text){
+function stopTalk(){
   if (!('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  if (voice) u.voice = voice;
-  u.rate = vRate; u.pitch = vPitch; u.volume = 1;
-  speechSynthesis.speak(u);
+  if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+}
+function speak(text){
+  if (!('speechSynthesis' in window) || !text) return;
+  // Cutting a line off and starting the next in the same instant makes iOS
+  // drop the chosen voice and fall back to a flatter one. Wait a beat.
+  const say = () => {
+    if (!voice) loadVoice();
+    const u = new SpeechSynthesisUtterance(text);
+    if (voice){ u.voice = voice; u.lang = voice.lang || 'en-US'; }
+    else u.lang = 'en-US';
+    u.rate = vRate; u.pitch = vPitch; u.volume = 1;
+    speechSynthesis.speak(u);
+  };
+  if (speechSynthesis.speaking || speechSynthesis.pending){
+    stopTalk();
+    setTimeout(say, 80);
+  } else say();
 }
 function showTune(){              // on-phone voice tuner: load with #tune, drag sliders, report the two numbers
   if ($('#tuneDbg')) return;
@@ -640,10 +660,16 @@ const MOVE_LUCAS = [
   ['Spin around.','🔄'],['March. March. March.','👣'],['Wiggle your body.','〰️'],['Clap five times.','👏'],
   ['Stomp your feet.','👟'],['Tiptoe. Shh.','🤫'],['Flap like a bird.','🐦'],['Stand on one foot.','🦵']
 ];
-const HATS = [['party hat','🥳'],['sun hat','👒'],['winter hat','🧢']];
-const OWEN_PETS = ['dog','cat','cow','duck','frog','bear'];
-const LIGHT_PATS = [['blue','yellow'],['red','green','red'],['yellow','blue','yellow','green']];
-const LIGHT_HEX = { red:'#ef4444', blue:'#3b82f6', yellow:'#facc15', green:'#22c55e' };
+const SILLY = [
+  { yes:'A fish in a tree.', silly:['🐟','🌳'], normal:[['🐟','💧'],['🐦','🌳'],['🦆','💧']] },
+  { yes:'A cow up in the clouds.', silly:['🐄','☁️'], normal:[['🐄','🌾'],['🐦','☁️'],['🐑','🌾']] },
+  { yes:'An elephant in a tiny tub.', silly:['🐘','🛁'], normal:[['🦆','🛁'],['🐘','🌿'],['🐶','🛁']] },
+  { yes:'A dog driving a car.', silly:['🐶','🚗'], normal:[['🐶','🦴'],['🐱','🥛'],['🐷','🍎']] },
+  { yes:'A pig on a bike.', silly:['🐷','🚲'], normal:[['🐷','🍎'],['🐑','🌾'],['🐶','🦴']] },
+  { yes:'A lion in a bed.', silly:['🦁','🛏️'], normal:[['🐱','🛏️'],['🦁','🌴'],['🐶','🛏️']] },
+  { yes:'A dinosaur eating ice cream.', silly:['🦖','🍦'], normal:[['🦖','🌿'],['🐻','🍯'],['🍦','🍨']] },
+  { yes:'A frog in a fancy hat.', silly:['🐸','🎩'], normal:[['🐸','💧'],['🐱','🎩'],['🐶','🦴']] }
+];
 const STORIES = [
   {say:'You got a big hug. How do you feel?', face:'happy', faces:['happy','sad','mad','surprised'], follow:'Who hugged you?'},
   {say:'Your balloon flew away. How do you feel?', face:'sad', faces:['sad','happy','proud','mad'], follow:'What could we do next?'},
@@ -910,40 +936,34 @@ const CATS = {
   silly: {
     label:'Silly', icon:'🦄', color:'#f472b6',
     build(){
-      const step = state.step || 0;
-      const owen = state.level === 'simple';
-      const colors = owen ? COLORS : COLORS.filter(c => c.name !== 'black' && c.name !== 'white');
-      const pets = owen ? ANIMALS.filter(a => OWEN_PETS.indexOf(a.name) >= 0) : ANIMALS;
-      if (step === 0) return anyStep('Pick a color.', sample(colors, owen ? 3 : 4).map(c => ({render:swatch(c.hex), value:c.name, key:'color'})));
-      if (step === 1) return anyStep('Pick an animal.', sample(pets, owen ? 3 : 4).map(a => ({render:emojiTile(a.emoji), value:a.name, key:'animal'})));
-      if (step === 2) return anyStep('Tiny or giant?', [
-        {render:'<span class="emoji">🐭</span>', value:'tiny', key:'size'},
-        {render:'<span class="emoji">🐘</span>', value:'giant', key:'size'}
+      let card = pick(SILLY);
+      if (card === state.bag.card) card = pick(SILLY.filter(c => c !== state.bag.card));
+      state.bag.card = card;
+      const extras = sample(card.normal, state.level === 'simple' ? 1 : 2);
+      const choices = shuffle([
+        { render:sillyCard(card.silly), correct:true },
+        ...extras.map(pair => ({ render:sillyCard(pair), correct:false }))
       ]);
-      if (!owen && step === 3) return anyStep('Pick a hat.', HATS.map(h => ({render:`<span class="emoji">${h[1]}</span>`, value:h[0], key:'hat'})));
-      const b = state.bag;
-      const say = owen ? `A ${b.size} ${b.color} ${b.animal}.` : `A ${b.size} ${b.color} ${b.animal} with a ${b.hat}.`;
-      return { say, check:true, noStar:true, reset:true, choices:[] };
+      return { say:'Which one is silly?', praiseSay:card.yes, choices, replayOnMiss:true };
     }
   },
 
   wholeft: {
     label:'Who left', icon:'👀', color:'#64748b',
     build(){
-      if (state.level !== 'simple'){
-        if (!state.bag.game) state.bag.game = roll(['left','lights']);
-        if (state.bag.game === 'lights') return lightsRound();
-      }
       if (!state.bag.looked){
         state.bag.prepared = prepareLeft();
         return {
-          say:'Look.', stage:state.bag.prepared.lookStage, choices:[], check:true, noStar:true, holdStep:true,
+          say:'Look at them.', stage:state.bag.prepared.lookStage, choices:[], noStar:true, holdStep:true, autoNext:2400,
           onCheck(){ state.bag.looked = true; }
         };
       }
       const prepared = state.bag.prepared;
       state.bag.looked = false;
-      return { say:'Who left?', stage:prepared.stayStage, choices:prepared.choices, replayOnMiss:true };
+      return {
+        say:'Who left?', praiseSay:'The ' + prepared.goneName + ' left.',
+        stage:prepared.stayStage, choices:prepared.choices, replayOnMiss:true
+      };
     }
   },
 
@@ -1085,9 +1105,8 @@ function pile(emoji, n){
 }
 function sameTile(emoji, n){ return '<div class="same-tile">' + pile(emoji, n) + pile(emoji, n) + '</div>'; }
 function mismatchTile(emoji, n){ return '<div class="same-tile">' + pile(emoji, n) + pile(emoji, Math.max(1, n - 1)) + '</div>'; }
-function anyStep(say, choices){
-  choices.forEach(c => { c.correct = false; });
-  return { say, choices, any:true, noStar:true };
+function sillyCard(pair){
+  return `<span class="silly-pic"><b>${pair[0]}</b><b>${pair[1]}</b></span>`;
 }
 function face(kind){
   const mouth = { happy:'M30 58 Q50 78 70 58', sad:'M30 72 Q50 52 70 72', mad:'M32 64 H68', scared:'M38 68 Q50 58 62 68', proud:'M32 60 Q50 74 68 60', surprised:'M43 60 h14 v14 h-14 z' };
@@ -1103,29 +1122,23 @@ function nameChoices(target, total){
   const pool = LETTERS.filter(L => L !== target && bad.indexOf(L) < 0);
   return shuffle([target].concat(sample(pool, total - 1))).map(L => ({render:letterTile(L), correct:L === target}));
 }
-function prepareLeft(){
-  const lookN = state.level === 'simple' ? 2 : 4;
-  const look = sample(ANIMALS, lookN);
-  const gone = pick(look);
-  const stay = look.filter(a => a !== gone);
-  const outsiders = ANIMALS.filter(a => look.indexOf(a) < 0);
-  const opts = shuffle([gone, ...sample(outsiders, lookN - 1)]);
-  const row = list => `<div class="sequence">${list.map(a => `<div class="seq-item">${a.emoji}</div>`).join('')}</div>`;
-  return {
-    lookStage: row(look),
-    stayStage: row(stay),
-    choices: opts.map(a => ({render:emojiTile(a.emoji), correct:a === gone, emoji:a.emoji, aname:a.name}))
-  };
+function whoRow(list){
+  return `<div class="sequence who-row">${list.map(a => a
+    ? `<div class="seq-item">${a.emoji}</div>`
+    : '<div class="seq-item who-gone"></div>'
+  ).join('')}</div>`;
 }
-function lightsRound(){
-  const i = state.step || 0;
-  if (i >= LIGHT_PATS.length) return { say:'All done.', check:true, noStar:true, reset:true, choices:[] };
-  const seq = LIGHT_PATS[i];
+function prepareLeft(){
+  const lookN = state.level === 'simple' ? 2 : 3;
+  const look = sample(ANIMALS, lookN);
+  const goneI = rand(lookN);
+  const gone = look[goneI];
+  const stay = look.map((a, i) => i === goneI ? null : a);
   return {
-    say: 'Watch the lights. Your turn.',
-    stage:`<div class="sequence">${seq.map(c => `<div class="seq-item" style="background:${LIGHT_HEX[c]}"></div>`).join('')}</div>`,
-    sequence: seq.slice(),
-    choices: ['red','blue','yellow','green'].map(c => ({render:swatch(LIGHT_HEX[c]), value:c, correct:false}))
+    lookStage: whoRow(look),
+    stayStage: whoRow(stay),
+    goneName: gone.name,
+    choices: shuffle(look).map(a => ({render:emojiTile(a.emoji), correct:a === gone, emoji:a.emoji, aname:a.name}))
   };
 }
 function animalChoice(names, answer){
@@ -1202,17 +1215,15 @@ function openCategory(id){
   state.category = id;
   state.step = 0;
   state.bag = {};
-  state.seq = [];
   state.misses = 0;
   showScreen('play');
   nextRound();
 }
 function renderRound(round){
   roundGen++;
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  stopTalk();
   state.locked = false;
   state.misses = 0;
-  state.seq = [];
   state.correctBtn = null;
   state.current = round;
   $('#stage').innerHTML = round.stage || '';
@@ -1239,6 +1250,10 @@ function renderRound(round){
     b.onclick = e => onCheck(e);
     wrap.appendChild(b);
   }
+  if (round.autoNext){
+    const waitGen = roundGen;
+    setTimeout(() => { if (waitGen === roundGen) finishCheck(round); }, round.autoNext);
+  }
   const gen = roundGen;
   setTimeout(() => {
     if (gen !== roundGen) return;
@@ -1250,67 +1265,23 @@ function nextRound(){
   if (!state.category) return;
   renderRound(CATS[state.category].build());
 }
-function onCheck(e){
-  if (skipExtraTap(e)) return;
-  const round = state.current || {};
+function finishCheck(round){
+  round = round || state.current || {};
   if (round.dino && state.seen.indexOf(round.dino) < 0) state.seen.push(round.dino);
   if (round.onCheck) round.onCheck();
   if (round.reset) state.step = 0;
   else if (!round.holdStep) state.step = (state.step || 0) + 1;
   save();
   nextRound();
-  lockExtraTap();
 }
-function onAny(ch){
-  state.bag[ch.key] = ch.value;
-  state.step = (state.step || 0) + 1;
-  nextRound();
+function onCheck(e){
+  if (skipExtraTap(e)) return;
+  finishCheck(state.current);
   lockExtraTap();
-}
-function onSequence(btn, ch, round){
-  if (state.locked) return;
-  state.seq = state.seq || [];
-  state.seq.push(ch.value);
-  const need = round.sequence;
-  const i = state.seq.length - 1;
-  if (ch.value !== need[i]){
-    state.misses++;
-    state.seq = [];
-    const marks = $('#choices').children;
-    for (let m = 0; m < marks.length; m++) marks[m].classList.remove('correct');
-    btn.classList.add('wrong');
-    sfxWrong();
-    setTimeout(() => btn.classList.remove('wrong'), 450);
-    if (state.misses >= 2){
-      state.locked = true;
-      const gen = roundGen;
-      setTimeout(() => {
-        if (gen !== roundGen) return;
-        state.step++;
-        state.misses = 0;
-        nextRound();
-      }, 500);
-    }
-    return;
-  }
-  btn.classList.add('correct');
-  if (state.seq.length === need.length){
-    state.locked = true;
-    sfxGood();
-    addStar();
-    celebrate();
-    state.step++;
-    state.seq = [];
-    state.misses = 0;
-    const gen = roundGen;
-    setTimeout(() => { if (gen === roundGen) nextRound(); }, 1100);
-  }
 }
 function onChoice(btn, ch, e){
   if (skipExtraTap(e) || state.locked) return;
   const round = state.current || {};
-  if (round.sequence) return onSequence(btn, ch, round);
-  if (round.any) return onAny(ch);
   if (ch.correct){
     state.locked = true;
     btn.classList.add('correct');
@@ -1459,7 +1430,7 @@ let sparkDeck = [], sparkIdx = 0;
 function refillSparks(){ sparkDeck = shuffle(sparkKind === 'night' ? NIGHT : SPARKS); sparkIdx = 0; }
 function setSparkKind(kind){ sparkKind = kind === 'night' ? 'night' : 'day'; refillSparks(); showSpark(); }
 function showSpark(){
-  if ('speechSynthesis' in window) speechSynthesis.cancel();  // don't carry a previous question's speech over
+  stopTalk();  // don't carry a previous question's speech over
   if (sparkIdx >= sparkDeck.length) refillSparks();
   $('#sparkText').textContent = sparkDeck[sparkIdx];
   $('#sparkProgress').textContent = (sparkIdx + 1) + ' / ' + sparkDeck.length;
@@ -1473,7 +1444,7 @@ $('#sparkListen').onclick = () => speak(sparkDeck[sparkIdx]);   // speak only on
 $('#sparkMoon').onclick = () => setSparkKind(sparkKind === 'night' ? 'day' : 'night');
 
 /* ---------- controls ---------- */
-$('#homeBtn').onclick = () => { roundGen++; if ('speechSynthesis' in window) speechSynthesis.cancel(); state.category = null; showScreen('home'); };
+$('#homeBtn').onclick = () => { roundGen++; stopTalk(); state.category = null; showScreen('home'); };
 $('#replay').onclick = () => {
   if (!state.current) return;
   const gen = roundGen;
@@ -1486,7 +1457,7 @@ const toggleBtns = $('#toggle').querySelectorAll('button');
 let holdTimer = null;
 function setLevel(b){
   roundGen++;
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  stopTalk();
   if (!state.starBank) state.starBank = { simple:0, complex:0 };
   state.starBank[state.level] = state.stars;
   state.level = b.dataset.level;

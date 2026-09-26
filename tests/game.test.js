@@ -27,10 +27,11 @@ function settle(g){
   while (g.sandbox._later.length && guard++ < 40) g.sandbox._later.shift().fn();
 }
 function pastLook(g){
-  if (g.play.state.current && /^Look/.test(g.play.state.current.say)){
-    g.ids.choices.children[0].onclick();
-  }
+  if (g.play.state.current && /^Look/.test(g.play.state.current.say)) settle(g);
   return g.play.state.current;
+}
+function levelBtn(g, level){
+  return g.ids.toggle._buttons.find(b => b.dataset.level === level);
 }
 
 test('Owen and Lucas see the right pictures at home', () => {
@@ -169,8 +170,8 @@ test('the phone remembers each boy and who played last', () => {
   g.play.state.stars = 0;
   g.play.addStar();
   g.play.addStar();
-  const lucasBtn = g.ids.toggle._buttons[1];
-  const owenBtn = g.ids.toggle._buttons[0];
+  const lucasBtn = levelBtn(g, 'complex');
+  const owenBtn = levelBtn(g, 'simple');
   g.play.setLevel(lucasBtn);
   assert.equal(g.play.state.stars, 0);
   g.play.addStar();
@@ -189,7 +190,7 @@ test('the phone remembers each boy and who played last', () => {
   const g4 = fresh(saved);
   assert.equal(g4.play.state.level, 'simple');
   assert.equal(g4.play.state.stars, 1);
-  g2.play.setLevel(g2.ids.toggle._buttons[0]);
+  g2.play.setLevel(levelBtn(g2, 'simple'));
   assert.equal(g2.play.state.stars, 2);
 });
 
@@ -253,25 +254,24 @@ test('Move is its own activity, unscored, and longer for Lucas', () => {
   assert.ok(lucas.some(s => /Stand on one foot/.test(s)));
 });
 
-test('Silly animal has no wrong answer', () => {
+test('Silly is a picture, and Lucas sits before Owen', () => {
   const g = fresh();
-  open(g, 'silly', 'simple', null);
-  assert.match(g.play.state.current.say, /Pick a color/);
-  assert.equal(g.play.state.current.choices.length, 3);
-  g.ids.choices.children[0].onclick();
-  assert.match(g.play.state.current.say, /Pick an animal/);
-  g.ids.choices.children[0].onclick();
-  assert.match(g.play.state.current.say, /Tiny or giant/);
-  g.ids.choices.children[0].onclick();
-  assert.match(g.play.state.current.say, /^A (tiny|giant) /);
-  assert.equal(g.play.state.stars, 0);
-  open(g, 'silly', 'complex', null);
-  g.ids.choices.children[0].onclick();
-  g.ids.choices.children[0].onclick();
-  g.ids.choices.children[0].onclick();
-  assert.match(g.play.state.current.say, /Pick a hat/);
-  g.ids.choices.children[0].onclick();
-  assert.match(g.play.state.current.say, /with a (party hat|sun hat|winter hat)/);
+  assert.match(g.html, /data-level="complex">Lucas<\/button>\s*<button class="simple on" data-level="simple">Owen/);
+  assert.match(g.sandbox.speak.toString(), /setTimeout\(say, 80\)/);
+  assert.match(g.sandbox.loadVoice.toString(), /full\(enUS\)/);
+  for (const level of ['simple', 'complex']){
+    for (let i = 0; i < 8; i++){
+      const round = open(g, 'silly', level, null);
+      assert.match(round.say, /Which one is silly/);
+      assert.match(round.praiseSay, /^(A|An) /);
+      assert.equal(round.choices.length, level === 'simple' ? 2 : 3);
+      assert.equal(round.choices.filter(c => c.correct).length, 1);
+      round.choices.forEach(c => assert.match(c.render, /silly-pic/));
+      const stars = g.play.state.stars;
+      correctBtn(g).onclick();
+      assert.equal(g.play.state.stars, stars + 1);
+    }
+  }
 });
 
 test('shapes stay visible on the white card', () => {
@@ -297,44 +297,33 @@ test('a second tap does not skip, and the old line stops', () => {
   assert.deepEqual(heard, ['Touch your toes.']);
 });
 
-test('Who left and copy the lights', () => {
+test('Who left shows the empty spot, and never turns into colors', () => {
   const g = fresh();
-  open(g, 'wholeft', 'simple', 'left');
+  open(g, 'wholeft', 'simple', null);
+  const look = g.play.state.current;
+  assert.match(look.say, /Look at them/);
+  assert.equal(look.choices.length, 0);
+  assert.equal(look.stage.includes('who-gone'), false);
+  assert.equal((look.stage.match(/seq-item/g) || []).length, 2);
   const round = pastLook(g);
   assert.match(round.say, /Who left/);
+  assert.match(round.praiseSay, /left/);
   assert.equal(round.choices.length, 2);
+  assert.equal(round.stage.includes('who-gone'), true);
   const gone = round.choices.find(c => c.correct);
-  assert.ok(gone);
+  const stayed = round.choices.find(c => !c.correct);
   assert.equal(round.stage.includes(gone.emoji), false);
-  open(g, 'wholeft', 'complex', 'left');
-  const lucas = pastLook(g);
-  assert.equal(lucas.choices.length, 4);
+  assert.equal(round.stage.includes(stayed.emoji), true);
+  const stars = g.play.state.stars;
+  correctBtn(g).onclick();
+  assert.equal(g.play.state.stars, stars + 1);
   open(g, 'wholeft', 'complex', 'lights');
-  assert.equal(g.play.state.current.sequence.length, 2);
-  g.play.state.current.sequence.forEach(color => {
-    g.ids.choices.children.find(b => b.dataset.value === color).onclick();
-  });
-  assert.equal(g.play.state.stars, 1);
-  settle(g);
-  assert.equal(g.play.state.current.sequence.length, 3);
-  const seq = g.play.state.current.sequence.slice();
-  const miss = ['red','blue','yellow','green'].find(c => c !== seq[0]);
-  const missBtn = g.ids.choices.children.find(b => b.dataset.value === miss);
-  missBtn.onclick();
-  assert.equal(missBtn.classList.contains('wrong'), true);
-  assert.equal(g.play.state.stars, 1);
-  g.play.state.mode = 'left';
-  g.play.nextRound();
-  assert.equal(g.play.state.current.sequence.length, 3);
-  const good = g.ids.choices.children.find(b => b.dataset.value === g.play.state.current.sequence[0]);
-  good.onclick();
-  const bad = g.ids.choices.children.find(b => b.dataset.value !== g.play.state.current.sequence[0]);
-  bad.onclick();
-  assert.equal(good.classList.contains('correct'), false);
-  bad.onclick();
-  bad.onclick();
-  settle(g);
-  assert.equal(g.play.state.current.sequence.length, 4);
+  assert.match(g.play.state.current.say, /Look at them/);
+  assert.equal(g.play.state.current.sequence, undefined);
+  const lucas = pastLook(g);
+  assert.equal(lucas.choices.length, 3);
+  assert.equal(lucas.stage.includes('who-gone'), true);
+  assert.equal(lucas.choices.some(c => /background:/.test(c.render)), false);
 });
 
 test('Feelings: Owen taps a face, Lucas gets a story then talk', () => {
