@@ -158,6 +158,14 @@
     flex:0 1 auto; display:grid; place-items:center; min-height:0;
     padding:6px 0;
   }
+  .stage:has(.stage-inner:empty){display:none; padding:0;}
+  #play.scene-only .stage{flex:1 1 auto;}
+  #play.scene-only .choices{display:none;}
+  #play.who-play .stage{flex:1 1 auto;}
+  #play.who-play .choices,
+  #play.who-play .choices.three{flex:0 0 auto; grid-auto-rows:128px; grid-template-columns:1fr 1fr;}
+  #play.who-play .choices.three{grid-template-columns:1fr 1fr 1fr;}
+  #play.who-play .choice .emoji{font-size:min(18vw,80px);}
   .stage-inner{width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;}
   .sequence{display:flex; flex-wrap:wrap; justify-content:center; gap:8px;}
   .seq-item{
@@ -193,9 +201,10 @@
   .choices.one{grid-template-columns:1fr;}
   .move-pic{font-size:120px;line-height:1;}
   .silly-pic{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:.9;gap:4px;}
-  .silly-pic b{font-size:min(12vw,64px);font-weight:normal;}
+  .silly-pic b{font-size:min(16vw,84px);font-weight:normal;}
   .who-row{gap:14px;}
-  .who-row .seq-item{width:96px;height:96px;font-size:64px;border-radius:22px;}
+  .who-row .seq-item{width:136px;height:136px;font-size:92px;border-radius:28px;}
+  .who-row.wide .seq-item{width:104px;height:104px;font-size:70px;}
   .who-gone{border:4px dashed #c4b5a8;background:#f6f1eb;box-shadow:none;animation:whohole 1.1s ease-in-out infinite;}
   @keyframes whohole{50%{transform:scale(.9);opacity:.55}}
   .dino-big svg{width:min(72vw,280px);height:auto;}
@@ -954,7 +963,7 @@ const CATS = {
       if (!state.bag.looked){
         state.bag.prepared = prepareLeft();
         return {
-          say:'Look at them.', stage:state.bag.prepared.lookStage, choices:[], noStar:true, holdStep:true, autoNext:2400,
+          say:'Look at them.', stage:state.bag.prepared.lookStage, choices:[], noStar:true, holdStep:true, autoNext:2400, who:true,
           onCheck(){ state.bag.looked = true; }
         };
       }
@@ -962,7 +971,7 @@ const CATS = {
       state.bag.looked = false;
       return {
         say:'Who left?', praiseSay:'The ' + prepared.goneName + ' left.',
-        stage:prepared.stayStage, choices:prepared.choices, replayOnMiss:true
+        stage:prepared.stayStage, choices:prepared.choices, replayOnMiss:true, who:true
       };
     }
   },
@@ -1123,7 +1132,7 @@ function nameChoices(target, total){
   return shuffle([target].concat(sample(pool, total - 1))).map(L => ({render:letterTile(L), correct:L === target}));
 }
 function whoRow(list){
-  return `<div class="sequence who-row">${list.map(a => a
+  return `<div class="sequence who-row${list.length > 2 ? ' wide' : ''}">${list.map(a => a
     ? `<div class="seq-item">${a.emoji}</div>`
     : '<div class="seq-item who-gone"></div>'
   ).join('')}</div>`;
@@ -1226,6 +1235,9 @@ function renderRound(round){
   state.misses = 0;
   state.correctBtn = null;
   state.current = round;
+  const sceneOnly = !!round.stage && !(round.choices && round.choices.length) && !round.check;
+  $('#play').classList.toggle('scene-only', sceneOnly);
+  $('#play').classList.toggle('who-play', !!round.who);
   $('#stage').innerHTML = round.stage || '';
   const wrap = $('#choices');
   const list = round.choices || [];
