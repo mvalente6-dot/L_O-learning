@@ -267,6 +267,9 @@ test('Silly is a picture, and Lucas sits before Owen', () => {
       assert.equal(round.choices.length, level === 'simple' ? 2 : 3);
       assert.equal(round.choices.filter(c => c.correct).length, 1);
       round.choices.forEach(c => assert.match(c.render, /silly-pic/));
+      round.choices.filter(c => !c.correct).forEach(c => {
+        assert.doesNotMatch(c.render, /🎩|🛁|🍦|🚲|🚗/);
+      });
       const stars = g.play.state.stars;
       correctBtn(g).onclick();
       assert.equal(g.play.state.stars, stars + 1);
@@ -451,6 +454,26 @@ test('leaving during the cheer does not skip the next game', () => {
   settle(g);
   assert.match(g.play.state.current.say, /Reach up high/);
   assert.equal(g.play.state.step, 0);
+});
+
+test('a newer line replaces one that was still waiting', () => {
+  const g = fresh();
+  const said = [];
+  let speaking = false;
+  g.sandbox.SpeechSynthesisUtterance = function(text){ this.text = text; };
+  g.sandbox.speechSynthesis = {
+    get speaking(){ return speaking; },
+    pending: false,
+    cancel(){ speaking = false; },
+    speak(u){ speaking = true; said.push(u.text); },
+    getVoices(){ return []; },
+  };
+  g.sandbox.speak('Look at them.');
+  assert.deepEqual(said, ['Look at them.']);
+  g.sandbox.speak('Who left?');
+  g.sandbox.speak('The dog left.');
+  settle(g);
+  assert.deepEqual(said, ['Look at them.', 'The dog left.']);
 });
 
 test('Goodnight is a separate calm deck and stays quiet until Listen', () => {

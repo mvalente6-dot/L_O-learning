@@ -374,7 +374,10 @@ if ('speechSynthesis' in window){
   speechSynthesis.onvoiceschanged = loadVoice;
 }
 if (location.hash === '#tune') showTune();
+let talkGen = 0, talking = false;
 function stopTalk(){
+  talkGen++;
+  talking = false;
   if (!('speechSynthesis' in window)) return;
   if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
 }
@@ -382,16 +385,22 @@ function speak(text){
   if (!('speechSynthesis' in window) || !text) return;
   // Cutting a line off and starting the next in the same instant makes iOS
   // drop the chosen voice and fall back to a flatter one. Wait a beat.
+  // talkGen drops a line that was still waiting, so it cannot talk over the new one.
+  const gen = ++talkGen;
   const say = () => {
+    if (gen !== talkGen) return;
     if (!voice) loadVoice();
     const u = new SpeechSynthesisUtterance(text);
-    if (voice){ u.voice = voice; u.lang = voice.lang || 'en-US'; }
+    if (voice) u.voice = voice;
     else u.lang = 'en-US';
     u.rate = vRate; u.pitch = vPitch; u.volume = 1;
+    u.onend = u.onerror = () => { if (gen === talkGen) talking = false; };
+    talking = true;
     speechSynthesis.speak(u);
   };
-  if (speechSynthesis.speaking || speechSynthesis.pending){
-    stopTalk();
+  if (talking){
+    talking = false;
+    if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
     setTimeout(say, 80);
   } else say();
 }
@@ -672,12 +681,12 @@ const MOVE_LUCAS = [
 const SILLY = [
   { yes:'A fish in a tree.', silly:['🐟','🌳'], normal:[['🐟','💧'],['🐦','🌳'],['🦆','💧']] },
   { yes:'A cow up in the clouds.', silly:['🐄','☁️'], normal:[['🐄','🌾'],['🐦','☁️'],['🐑','🌾']] },
-  { yes:'An elephant in a tiny tub.', silly:['🐘','🛁'], normal:[['🦆','🛁'],['🐘','🌿'],['🐶','🛁']] },
+  { yes:'An elephant in a tiny tub.', silly:['🐘','🛁'], normal:[['🐘','🌿'],['🦆','💧'],['🐶','🦴']] },
   { yes:'A dog driving a car.', silly:['🐶','🚗'], normal:[['🐶','🦴'],['🐱','🥛'],['🐷','🍎']] },
-  { yes:'A pig on a bike.', silly:['🐷','🚲'], normal:[['🐷','🍎'],['🐑','🌾'],['🐶','🦴']] },
-  { yes:'A lion in a bed.', silly:['🦁','🛏️'], normal:[['🐱','🛏️'],['🦁','🌴'],['🐶','🛏️']] },
-  { yes:'A dinosaur eating ice cream.', silly:['🦖','🍦'], normal:[['🦖','🌿'],['🐻','🍯'],['🍦','🍨']] },
-  { yes:'A frog in a fancy hat.', silly:['🐸','🎩'], normal:[['🐸','💧'],['🐱','🎩'],['🐶','🦴']] }
+  { yes:'A pig on a bike.', silly:['🐷','🚲'], normal:[['🐷','🍎'],['🐑','🌾'],['🐮','🌾']] },
+  { yes:'A lion in a bed.', silly:['🦁','🛏️'], normal:[['🐱','🛏️'],['🐶','🛏️'],['🦁','🌴']] },
+  { yes:'A dinosaur eating ice cream.', silly:['🦖','🍦'], normal:[['🦖','🌿'],['🐻','🍯'],['🐵','🍌']] },
+  { yes:'A frog in a fancy hat.', silly:['🐸','🎩'], normal:[['🐸','💧'],['🦆','💧'],['🐶','🦴']] }
 ];
 const STORIES = [
   {say:'You got a big hug. How do you feel?', face:'happy', faces:['happy','sad','mad','surprised'], follow:'Who hugged you?'},
