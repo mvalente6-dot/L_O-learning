@@ -486,3 +486,122 @@ test('Goodnight is a separate calm deck and stays quiet until Listen', () => {
   assert.equal(g.play.showSpark.toString().includes('speak('), false);
   assert.equal(g.ids.sparkListen.onclick.toString().includes('speak('), true);
 });
+
+test('School is Lucas only and comes first for him', () => {
+  const g = fresh();
+  g.play.state.level = 'simple';
+  assert.doesNotMatch(labels(g).join('\n'), /School/);
+  g.play.state.level = 'complex';
+  const tiles = labels(g);
+  assert.match(tiles[0], /School/);
+});
+
+test('School letters use the slanted print and ask for big or little', () => {
+  const g = fresh();
+  for (let i = 0; i < 60; i++){
+    const r = open(g, 'school', 'complex', 'letter');
+    assert.match(r.say, /^Find the (big|little) letter [A-Z]\.$/);
+    assert.equal(r.choices.length, 4);
+    assert.equal(r.choices.filter(c => c.correct).length, 1);
+    assert.ok(r.choices.every(c => /class="letter dn"/.test(c.render)));
+    const little = /little/.test(r.say);
+    const shown = r.choices.map(c => c.render.match(/>(.)</)[1]);
+    assert.equal(new Set(shown).size, 4);
+    assert.ok(shown.every(ch => little ? /[a-z]/.test(ch) : /[A-Z]/.test(ch)));
+    const L = r.say.match(/letter ([A-Z])/)[1];
+    assert.equal(r.choices.find(c => c.correct).render.match(/>(.)</)[1].toUpperCase(), L);
+  }
+});
+
+test('School big/little match shows one case and asks for the other', () => {
+  const g = fresh();
+  for (let i = 0; i < 40; i++){
+    const r = open(g, 'school', 'complex', 'match');
+    const shown = r.stage.match(/>(.)</)[1];
+    const answer = r.choices.find(c => c.correct).render.match(/>(.)</)[1];
+    assert.match(r.stage, /big-show dn/);
+    assert.notEqual(shown, answer);
+    assert.equal(shown.toUpperCase(), answer.toUpperCase());
+    assert.equal(r.choices.filter(c => c.correct).length, 1);
+  }
+});
+
+test('School letter sounds go both ways and never mix up cat and kite', () => {
+  const g = fresh();
+  for (let i = 0; i < 60; i++){
+    const s = open(g, 'school', 'complex', 'sound');
+    assert.match(s.say, /What letter does \w[\w-]* start with\?/);
+    assert.equal(s.choices.filter(c => c.correct).length, 1);
+    const ls = s.choices.map(c => c.render.match(/>(.)</)[1]);
+    const ans = s.choices.find(c => c.correct).render.match(/>(.)</)[1];
+    if (ans === 'c') assert.ok(!ls.includes('k'));
+    if (ans === 'k') assert.ok(!ls.includes('c'));
+    const p = open(g, 'school', 'complex', 'picture');
+    assert.match(p.say, /This is the letter [A-Z]\. Which picture starts with its sound\?/);
+    assert.equal(p.choices.length, 3);
+    assert.equal(p.choices.filter(c => c.correct).length, 1);
+    const pics = p.choices.map(c => c.render);
+    const right = p.choices.find(c => c.correct).render;
+    if (/🐱|🪁/.test(right)) assert.ok(!(pics.some(x => /🐱/.test(x)) && pics.some(x => /🪁/.test(x))));
+  }
+});
+
+test('School numbers go up to 20 and rhymes include yes/no pairs', () => {
+  const g = fresh();
+  const seen = new Set();
+  for (let i = 0; i < 200; i++){
+    const r = open(g, 'school', 'complex', 'number');
+    const n = +r.say.match(/number (\d+)/)[1];
+    assert.ok(n >= 0 && n <= 20);
+    seen.add(n);
+    assert.equal(r.choices.filter(c => c.correct).length, 1);
+    assert.match(r.choices[0].render, /num dn/);
+  }
+  assert.ok(seen.has(20) && seen.has(0));
+  const answers = new Set();
+  for (let i = 0; i < 40; i++){
+    const r = open(g, 'school', 'complex', 'rhymepair');
+    assert.match(r.say, /^Do \w+ and \w+ rhyme\?$/);
+    assert.equal(r.choices.length, 2);
+    const yes = r.choices[0].correct;
+    answers.add(yes);
+    assert.match(r.praiseSay, yes ? /They rhyme/ : /do not rhyme/);
+    const q = open(g, 'school', 'complex', 'rhyme');
+    assert.equal(q.choices.filter(c => c.correct).length, 1);
+  }
+  assert.equal(answers.size, 2);
+});
+
+test('School rotates through every skill before repeating', () => {
+  const g = fresh();
+  g.play.state.level = 'complex';
+  g.play.state.mode = null;
+  g.play.buildHome();
+  g.play.openCategory('school');
+  const kinds = g.play.SCHOOL_KINDS.length;
+  let traces = 0;
+  for (let i = 1; i < kinds; i++){
+    if (g.play.state.current.glyph) traces++;
+    g.play.nextRound();
+  }
+  if (g.play.state.current.glyph) traces++;
+  assert.equal(traces, 2);
+});
+
+test('School tracing asks for a letter or number and judges coverage', () => {
+  const g = fresh();
+  for (let i = 0; i < 40; i++){
+    const r = open(g, 'school', 'complex', 'trace');
+    assert.match(r.say, /^Trace the (little letter|big letter|number) [A-Z0-9]\.$/);
+    assert.match(r.stage, /trace-pad/);
+    assert.equal(r.choices.length, 0);
+    assert.equal(typeof r.mount, 'function');
+  }
+  const v = g.play.traceVerdict;
+  assert.equal(v(90, 100, 5, 100), 'done');
+  assert.equal(v(80, 100, 5, 100), 'more');
+  assert.equal(v(90, 100, 60, 100), 'messy');
+  assert.equal(v(30, 100, 2, 40), 'more');
+  assert.equal(v(10, 100, 50, 60), 'messy');
+  assert.equal(v(0, 0, 0, 0), 'more');
+});

@@ -11,6 +11,7 @@ Open `Kids Learning Game - 2026-06-04.html` in any phone or desktop browser. No 
 - **Two levels**, switched with the top toggle: **Owen** (younger, ~2.5) and **Lucas** (older, ~4.5).
   - On the home screen the toggle is a single tap; **inside a game it requires a press-and-hold** so a kid can't flip it mid-session by accident.
 - **Categories:** Numbers, Colors, Shapes, Animals, Dinos (plus **Letters** and **Patterns**, which appear for Lucas only).
+- **School** (Lucas only, first tile): kindergarten screening practice. Letters big and little in a D'Nealian-style slanted print, letter sounds both ways, numbers 0 to 20, rhymes (pick the rhyme, and "do these rhyme?"), colors, and finger tracing of letters and numbers. Rounds rotate so every skill comes up before any repeats.
 - Every prompt is **spoken aloud** (Web Speech API) — no reading required except single letters.
 - **Real animal-sound recordings** play on the "who says this?" question and as a reward for a correct tap.
 - Dinosaurs are hand-built inline SVG illustrations; feedback chimes are generated with the Web Audio API. No external asset files.
@@ -27,7 +28,10 @@ Open `Kids Learning Game - 2026-06-04.html` in any phone or desktop browser. No 
 | Animals | find the animal | who says this? / farm animal |
 | Dinos | find the dinosaur (3 choices) | find the dinosaur (4 choices) |
 | Patterns | — | complete the repeating pattern |
+| School | — | screening practice: D'Nealian-style letters, sounds, numbers 0–20, rhymes, colors, tracing |
 
 ## Credits
 
 Animal sounds are sourced from Wikimedia Commons under CC0 / CC BY / CC BY-SA licenses. Per-sound attribution is in a comment block at the bottom of the HTML file.
+
+The School letters use **Edu QLD Beginner** by the AU School Handwriting Fonts Project Authors, embedded under the SIL Open Font License 1.1 (`docs/fonts/EduQLDBeginner-OFL.txt`). It is a slanted beginner print close to D'Nealian, not D'Nealian itself.
