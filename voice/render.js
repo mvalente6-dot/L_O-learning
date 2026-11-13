@@ -105,16 +105,21 @@ function writeManifest(voice, model){
 async function samples(){
   fs.mkdirSync(SAMPLES, { recursive: true });
   const list = [];
-  for (const voice of CONFIG.sampleVoices){
-    for (const [i, text] of CONFIG.sampleLines.entries()){
-      const file = `${voice}-${i + 1}.mp3`;
-      if (!fs.existsSync(path.join(SAMPLES, file))){
-        const audio = await synth(text, voice);
-        toMp3(audio, path.join(SAMPLES, file));
-        console.log(`${voice} ${i + 1}: ${text}`);
+  try {
+    for (const voice of CONFIG.sampleVoices){
+      for (const [i, text] of CONFIG.sampleLines.entries()){
+        const file = `${voice}-${i + 1}.mp3`;
+        if (!fs.existsSync(path.join(SAMPLES, file))){
+          const audio = await synth(text, voice);
+          toMp3(audio, path.join(SAMPLES, file));
+          console.log(`${voice} ${i + 1}: ${text}`);
+        }
+        list.push({ voice, text, file });
       }
-      list.push({ voice, text, file });
     }
+  } catch (e){
+    if (!(e instanceof DailyLimit)) throw e;
+    console.log('Google\'s daily limit reached; the next run records the rest of the samples.');
   }
   fs.writeFileSync(path.join(SAMPLES, 'samples.json'), JSON.stringify({ model: models[0], style: CONFIG.style, samples: list }, null, 1) + '\n');
   console.log(`Samples ready in audio/voice-samples (${list.length} clips, model ${models[0]}).`);
