@@ -257,7 +257,7 @@ test('Move is its own activity, unscored, and longer for Lucas', () => {
 test('Silly is a picture, and Lucas sits before Owen', () => {
   const g = fresh();
   assert.match(g.html, /data-level="complex">Lucas<\/button>\s*<button class="simple on" data-level="simple">Owen/);
-  assert.match(g.sandbox.speak.toString(), /setTimeout\(say, 80\)/);
+  assert.match(g.sandbox.speakSynth.toString(), /setTimeout\(say, 80\)/);
   assert.match(g.sandbox.loadVoice.toString(), /full\(enUS\)/);
   for (const level of ['simple', 'complex']){
     for (let i = 0; i < 8; i++){

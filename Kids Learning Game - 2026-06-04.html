@@ -388,15 +388,23 @@ let talkGen = 0, talking = false;
 function stopTalk(){
   talkGen++;
   talking = false;
+  if (voiceEl){ try{ voiceEl.pause(); }catch(e){} }
   if (!('speechSynthesis' in window)) return;
   if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
 }
 function speak(text){
-  if (!('speechSynthesis' in window) || !text) return;
+  if (!text) return;
+  const gen = ++talkGen;
+  const key = voiceKey(text);
+  if (voiceClips && voiceClips.has(key)) playClip(key, text, gen);
+  else speakSynth(text, gen);
+}
+function speakSynth(text, gen){
+  if (!('speechSynthesis' in window)) return;
+  if (voiceEl){ try{ voiceEl.pause(); }catch(e){} }
   // Cutting a line off and starting the next in the same instant makes iOS
   // drop the chosen voice and fall back to a flatter one. Wait a beat.
   // talkGen drops a line that was still waiting, so it cannot talk over the new one.
-  const gen = ++talkGen;
   const say = () => {
     if (gen !== talkGen) return;
     if (!voice) loadVoice();
@@ -408,12 +416,59 @@ function speak(text){
     talking = true;
     speechSynthesis.speak(u);
   };
-  if (talking){
+  if (talking || speechSynthesis.speaking || speechSynthesis.pending){
     talking = false;
     if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
     setTimeout(say, 80);
   } else say();
 }
+
+/* ---------- recorded voice ----------
+   Lines recorded ahead of time (Google voice) sit in audio/voice/ next to this file,
+   one MP3 per line, named by voiceKey(line). manifest.json lists the ones that exist.
+   Any line without a clip, or the file opened offline, uses the phone voice above.
+   voice/lines.json lists every line the game says; run `node voice/lines.js` after
+   changing spoken text (a test fails until you do). */
+const VOICE_DIR = 'audio/voice/';
+let voiceClips = null, voiceEl = null;
+function voiceKey(text){
+  const t = String(text).replace(/\s+/g, ' ').trim();
+  let a = 0x811c9dc5, b = 0x9747b28c;
+  for (let i = 0; i < t.length; i++){
+    const c = t.charCodeAt(i);
+    a = Math.imul(a ^ c, 0x01000193) >>> 0;
+    b = Math.imul(b ^ c, 0x5bd1e995) >>> 0; b = (b ^ (b >>> 15)) >>> 0;
+  }
+  return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0');
+}
+function loadVoiceClips(){
+  if (!/^https?:$/.test(location.protocol || '') || typeof fetch !== 'function') return;
+  fetch(VOICE_DIR + 'manifest.json', {cache:'no-cache'})
+    .then(r => r.ok ? r.json() : null)
+    .then(m => { if (m && Array.isArray(m.clips) && m.clips.length) voiceClips = new Set(m.clips); })
+    .catch(() => {});
+}
+function playClip(key, text, gen){
+  if ('speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
+  const fallback = () => {               // clip missing or blocked: say it with the phone voice
+    if (gen !== talkGen) return;
+    talking = false;
+    if (voiceClips) voiceClips.delete(key);
+    speakSynth(text, gen);
+  };
+  try{
+    if (!voiceEl) voiceEl = new Audio();
+    const a = voiceEl;
+    a.onended = () => { if (gen === talkGen) talking = false; };
+    a.onerror = fallback;
+    a.muted = false; a.volume = 1;
+    a.src = VOICE_DIR + key + '.mp3';
+    talking = true;
+    const p = a.play();
+    if (p && p.catch) p.catch(err => { if (!err || err.name !== 'AbortError') fallback(); });
+  }catch(e){ fallback(); }
+}
+loadVoiceClips();
 function showTune(){              // on-phone voice tuner: load with #tune, drag sliders, report the two numbers
   if ($('#tuneDbg')) return;
   const d = document.createElement('div'); d.id = 'tuneDbg';
@@ -486,6 +541,10 @@ function unlockAudio(){
     if (!first) return;
     animalAudio = new Audio(first); animalAudio.muted = true;
     animalAudio.play().then(()=>{ animalAudio.pause(); animalAudio.currentTime = 0; animalAudio.muted = false; }).catch(()=>{ animalAudio.muted = false; });
+    if (!voiceEl){                          // the welcome line wasn't a clip: prime the voice player too
+      const v = voiceEl = new Audio(first); v.muted = true;
+      v.play().then(()=>{ if (v.muted){ v.pause(); v.muted = false; } }).catch(()=>{ v.muted = false; });
+    }
   }catch(e){}
 }
 

@@ -1,0 +1,60 @@
+# Records the game's spoken lines with a Google Gemini voice (see voice/render.js)
+# and commits the clips to the branch it ran on. Needs the repository secret
+# GEMINI_API_KEY (a key from Google AI Studio). Clips already recorded are skipped,
+# so a run that hits Google's daily limit is simply continued by the next one.
+name: Record voice clips
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'samples = a few lines in each sample voice; all = every line not recorded yet'
+        type: choice
+        options: [samples, all]
+        default: samples
+  push:
+    paths: ['voice/request.json']     # edit this file to ask for a run from a branch
+  schedule:
+    - cron: '17 9 * * *'              # daily on the default branch: finish any lines still missing
+
+permissions:
+  contents: write
+
+concurrency:
+  group: voice-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Make sure ffmpeg is installed
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: Pick what to record
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then mode="${{ inputs.mode }}"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then mode=all
+          else mode=$(node -p "require('./voice/request.json').mode || 'samples'"); fi
+          if [ "$mode" = all ] && [ -z "$(node -p "require('./voice/config.json').voice")" ]; then
+            echo "No voice picked yet in voice/config.json; nothing to record."; mode=none
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+      - name: Record
+        if: steps.mode.outputs.mode != 'none'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node voice/render.js "${{ steps.mode.outputs.mode }}"
+      - name: Commit the clips
+        if: always() && steps.mode.outputs.mode != 'none'
+        run: |
+          git add -A audio
+          if git diff --cached --quiet; then echo "No new clips."; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Record voice clips (${{ steps.mode.outputs.mode }})"
+          for i in 1 2 3; do git pull -q --rebase && git push -q && exit 0; sleep 5; done; exit 1

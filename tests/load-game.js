@@ -98,7 +98,9 @@ function loadGame(opts){
 globalThis.__play = {
   CATS, state, setLevel, onChoice, nextRound, openCategory, onCheck,
   SPARKS, NIGHT, loadSave, addStar, showSpark, setSparkKind, allowed, buildHome,
-  SCHOOL_KINDS, schoolRound, traceVerdict
+  SCHOOL_KINDS, schoolRound, traceVerdict, voiceKey, speak, stopTalk,
+  setVoiceClips: keys => { voiceClips = keys ? new Set(keys) : null; },
+  voicePlayer: () => voiceEl, isTalking: () => talking
 };
 `;
   vm.runInContext(m[1] + tail, sandbox, { filename: 'game.html' });
