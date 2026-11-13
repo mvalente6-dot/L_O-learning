@@ -58,6 +58,7 @@ async function synth(text, voiceName){
       models.shift();
       continue;
     }
+    if (res.status === 402) throw new Error('This key\'s Google project is on prepaid billing with no credit left. Use a key from a project without billing (free tier), or add credit in AI Studio. Google said: ' + msg);
     if (res.status === 401 || res.status === 403) throw new Error(`Google refused the key (${res.status}): ${msg}`);
     if (res.status === 429){
       if (/per ?day|PerDay|daily/i.test(raw)) throw new DailyLimit(msg);
