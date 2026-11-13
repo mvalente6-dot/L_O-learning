@@ -124,7 +124,10 @@ async function all(){
   const voice = process.env.VOICE || CONFIG.voice;
   if (!voice) throw new Error('Pick a voice first: set "voice" in voice/config.json.');
   fs.mkdirSync(CLIPS, { recursive: true });
-  const todo = LINES.filter(l => !fs.existsSync(path.join(CLIPS, l.key + '.mp3')));
+  // ONLY (e.g. "start,school") limits a run to lines from those modes; empty = every line.
+  const only = String(process.env.ONLY || '').split(',').map(x => x.trim()).filter(Boolean);
+  const todo = LINES.filter(l => (!only.length || only.includes(l.from)) && !fs.existsSync(path.join(CLIPS, l.key + '.mp3')));
+  if (only.length) console.log('Only recording lines from: ' + only.join(', '));
   console.log(`${LINES.length - todo.length} of ${LINES.length} lines already recorded; ${todo.length} to go, voice ${voice}.`);
   let done = 0, odd = [];
   try {
