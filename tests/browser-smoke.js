@@ -14,7 +14,9 @@ const NIGHT = [
 ];
 
 async function run(width, height, label){
-  const browser = await chromium.launch({ headless: true });
+  const launch = { headless: true, args: ['--no-sandbox'] };
+  if (process.env.CHROME_PATH) launch.executablePath = process.env.CHROME_PATH;
+  const browser = await chromium.launch(launch);
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
   page.on('pageerror', err => errors.push(String(err)));
@@ -29,6 +31,14 @@ async function run(width, height, label){
   await page.locator('#choices .choice').click();
   const after = await page.locator('#starCount').textContent();
   if (before !== '0' || after !== '0') throw new Error(label + ' Move gave a star');
+  await page.click('#homeBtn');
+  await page.locator('.cat', { hasText: 'Animals' }).click();
+  const animal = page.locator('#choices img.photo').first();
+  await animal.waitFor();
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#choices img.photo');
+    return el && el.complete && el.naturalWidth > 20;
+  });
   await page.click('#homeBtn');
   await page.locator('.cat', { hasText: 'Colors' }).click();
   const wrong = page.locator('#choices .choice:not([data-correct="1"])').first();
@@ -55,6 +65,14 @@ async function run(width, height, label){
   await page.locator('#choices .choice[data-correct="1"]').click({ force: true });
   await page.click('#homeBtn');
   await page.locator('#toggle button.complex').click();
+  await page.locator('.cat', { hasText: 'Dinos' }).click();
+  const dino = page.locator('#choices img.photo.dino').first();
+  await dino.waitFor();
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#choices img.photo.dino');
+    return el && el.complete && el.naturalWidth > 20 && /assets\/dinos\//.test(el.getAttribute('src'));
+  });
+  await page.click('#homeBtn');
   await page.locator('.cat', { hasText: 'Who left' }).click();
   await page.waitForSelector('#stage .who-gone', { timeout: 5000 });
   if (await page.locator('#choices .choice').count() !== 3) throw new Error(label + ' lucas who left');
@@ -62,6 +80,25 @@ async function run(width, height, label){
   await page.click('#homeBtn');
   const lucasTiles = await page.locator('#catGrid .lbl').allTextContents();
   if (!lucasTiles.includes('Letters') || !lucasTiles.includes('Rhymes')) throw new Error(label + ' Lucas tiles ' + lucasTiles.join(','));
+  if (lucasTiles[0] !== 'School') throw new Error(label + ' School is not first for Lucas: ' + lucasTiles.join(','));
+  await page.locator('.cat', { hasText: 'School' }).click();
+  for (let i = 0; i < 6; i++){
+    const pad = await page.locator('#stage canvas.trace-pad').count();
+    const tiles = await page.locator('#choices .choice').count();
+    if (!pad && tiles < 2) throw new Error(label + ' School round had nothing to tap');
+    if (pad){
+      const box = await page.locator('#stage canvas.trace-pad').boundingBox();
+      if (!box || box.width < 200) throw new Error(label + ' trace pad too small');
+      await page.click('#homeBtn');
+      await page.locator('.cat', { hasText: 'School' }).click();
+    } else {
+      await page.locator('#choices .choice[data-correct="1"]').click({ force: true });
+      await page.waitForTimeout(3200);
+    }
+  }
+  const dnFont = await page.evaluate(() => document.fonts.check("600 40px 'Edu QLD Beginner'"));
+  if (!dnFont) throw new Error(label + ' school font did not load');
+  await page.click('#homeBtn');
   await page.locator('.cat', { hasText: 'Letters' }).click();
   if (await page.locator('#choices .choice').count() < 3) throw new Error(label + ' letters had too few choices');
   await page.click('#homeBtn');
