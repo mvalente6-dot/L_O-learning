@@ -80,6 +80,25 @@ async function run(width, height, label){
   await page.click('#homeBtn');
   const lucasTiles = await page.locator('#catGrid .lbl').allTextContents();
   if (!lucasTiles.includes('Letters') || !lucasTiles.includes('Rhymes')) throw new Error(label + ' Lucas tiles ' + lucasTiles.join(','));
+  if (lucasTiles[0] !== 'School') throw new Error(label + ' School is not first for Lucas: ' + lucasTiles.join(','));
+  await page.locator('.cat', { hasText: 'School' }).click();
+  for (let i = 0; i < 6; i++){
+    const pad = await page.locator('#stage canvas.trace-pad').count();
+    const tiles = await page.locator('#choices .choice').count();
+    if (!pad && tiles < 2) throw new Error(label + ' School round had nothing to tap');
+    if (pad){
+      const box = await page.locator('#stage canvas.trace-pad').boundingBox();
+      if (!box || box.width < 200) throw new Error(label + ' trace pad too small');
+      await page.click('#homeBtn');
+      await page.locator('.cat', { hasText: 'School' }).click();
+    } else {
+      await page.locator('#choices .choice[data-correct="1"]').click({ force: true });
+      await page.waitForTimeout(3200);
+    }
+  }
+  const dnFont = await page.evaluate(() => document.fonts.check("600 40px 'Edu QLD Beginner'"));
+  if (!dnFont) throw new Error(label + ' school font did not load');
+  await page.click('#homeBtn');
   await page.locator('.cat', { hasText: 'Letters' }).click();
   if (await page.locator('#choices .choice').count() < 3) throw new Error(label + ' letters had too few choices');
   await page.click('#homeBtn');

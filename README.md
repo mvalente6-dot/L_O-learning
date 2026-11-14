@@ -10,7 +10,8 @@ Open `Kids Learning Game - 2026-06-04.html` in any phone or desktop browser. The
 
 - **Two levels**, switched with the top toggle: **Owen** (younger, ~2.5) and **Lucas** (older, ~4.5).
   - On the home screen the toggle is a single tap; **inside a game it requires a press-and-hold** so a kid can't flip it mid-session by accident.
-- **Categories:** Numbers, Colors, Shapes, Animals, Dinos (plus **Letters** and **Patterns**, which appear for Lucas only).
+- **Categories:** Numbers, Colors, Shapes, Animals, Dinos (plus **Letters**, **Patterns**, and **School**, which appear for Lucas only).
+- **School** (Lucas only, first tile): kindergarten screening practice. Letters big and little in a slanted beginner print, letter sounds both ways, numbers 0 to 20, rhymes, colors, and finger tracing of letters and numbers.
 - Every prompt is **spoken in a recorded woman's voice**. If a line is missing, the phone's own voice fills in. No reading required except single letters.
 - **Real animal-sound recordings** play on the "who says this?" question and as a reward for a correct tap.
 - The things kids tap are real photos. Dinosaurs are lifelike pictures. Feeling faces, letters, and shapes stay simple. Feedback chimes are generated with the Web Audio API.
@@ -27,7 +28,10 @@ Open `Kids Learning Game - 2026-06-04.html` in any phone or desktop browser. The
 | Animals | find the animal | who says this? / farm animal |
 | Dinos | find the dinosaur (3 choices) | find the dinosaur (4 choices) |
 | Patterns | — | complete the repeating pattern |
+| School | — | screening practice: slanted letters, sounds, numbers 0–20, rhymes, colors, tracing |
 
 ## Credits
 
 Animal sounds are sourced from Wikimedia Commons under CC0 / CC BY / CC BY-SA licenses. Per-sound attribution is in a comment block at the bottom of the HTML file.
+
+The School letters use **Edu QLD Beginner** by the AU School Handwriting Fonts Project Authors, embedded under the SIL Open Font License 1.1 (`docs/fonts/EduQLDBeginner-OFL.txt`). It is a slanted beginner print close to D'Nealian, not D'Nealian itself.

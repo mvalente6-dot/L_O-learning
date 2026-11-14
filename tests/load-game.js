@@ -97,7 +97,8 @@ function loadGame(opts){
   const tail = `
 globalThis.__play = {
   CATS, state, setLevel, onChoice, nextRound, openCategory, onCheck,
-  SPARKS, NIGHT, loadSave, addStar, showSpark, setSparkKind, allowed, buildHome
+  SPARKS, NIGHT, loadSave, addStar, showSpark, setSparkKind, allowed, buildHome,
+  SCHOOL_KINDS, schoolRound, traceVerdict
 };
 `;
   vm.runInContext(m[1] + tail, sandbox, { filename: 'game.html' });
