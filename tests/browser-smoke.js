@@ -14,7 +14,9 @@ const NIGHT = [
 ];
 
 async function run(width, height, label){
-  const browser = await chromium.launch({ headless: true });
+  const launch = { headless: true, args: ['--no-sandbox'] };
+  if (process.env.CHROME_PATH) launch.executablePath = process.env.CHROME_PATH;
+  const browser = await chromium.launch(launch);
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
   page.on('pageerror', err => errors.push(String(err)));
@@ -29,6 +31,14 @@ async function run(width, height, label){
   await page.locator('#choices .choice').click();
   const after = await page.locator('#starCount').textContent();
   if (before !== '0' || after !== '0') throw new Error(label + ' Move gave a star');
+  await page.click('#homeBtn');
+  await page.locator('.cat', { hasText: 'Animals' }).click();
+  const animal = page.locator('#choices img.photo').first();
+  await animal.waitFor();
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#choices img.photo');
+    return el && el.complete && el.naturalWidth > 20;
+  });
   await page.click('#homeBtn');
   await page.locator('.cat', { hasText: 'Colors' }).click();
   const wrong = page.locator('#choices .choice:not([data-correct="1"])').first();
@@ -55,6 +65,14 @@ async function run(width, height, label){
   await page.locator('#choices .choice[data-correct="1"]').click({ force: true });
   await page.click('#homeBtn');
   await page.locator('#toggle button.complex').click();
+  await page.locator('.cat', { hasText: 'Dinos' }).click();
+  const dino = page.locator('#choices img.photo.dino').first();
+  await dino.waitFor();
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#choices img.photo.dino');
+    return el && el.complete && el.naturalWidth > 20 && /assets\/dinos\//.test(el.getAttribute('src'));
+  });
+  await page.click('#homeBtn');
   await page.locator('.cat', { hasText: 'Who left' }).click();
   await page.waitForSelector('#stage .who-gone', { timeout: 5000 });
   if (await page.locator('#choices .choice').count() !== 3) throw new Error(label + ' lucas who left');

@@ -4,16 +4,16 @@ A single-file, offline HTML learning game for two young kids, built to scale wit
 
 ## Run it
 
-Open `Kids Learning Game - 2026-06-04.html` in any phone or desktop browser. No internet, install, or build step — it's fully self-contained. Tap **Start** once to enable the voice, then play.
+Open `Kids Learning Game - 2026-06-04.html` in any phone or desktop browser. The pictures and the recorded voice sit in the `assets` folder next to that file. Tap **Start** once to turn the sound on, then play. The first open of the published page needs internet. After that, it keeps working if the connection drops.
 
 ## What it does
 
 - **Two levels**, switched with the top toggle: **Owen** (younger, ~2.5) and **Lucas** (older, ~4.5).
   - On the home screen the toggle is a single tap; **inside a game it requires a press-and-hold** so a kid can't flip it mid-session by accident.
 - **Categories:** Numbers, Colors, Shapes, Animals, Dinos (plus **Letters** and **Patterns**, which appear for Lucas only).
-- Every prompt is **spoken aloud** (Web Speech API) — no reading required except single letters.
+- Every prompt is **spoken in a recorded woman's voice**. If a line is missing, the phone's own voice fills in. No reading required except single letters.
 - **Real animal-sound recordings** play on the "who says this?" question and as a reward for a correct tap.
-- Dinosaurs are hand-built inline SVG illustrations; feedback chimes are generated with the Web Audio API. No external asset files.
+- The things kids tap are real photos. Dinosaurs are lifelike pictures. Feeling faces, letters, and shapes stay simple. Feedback chimes are generated with the Web Audio API.
 - **Conversation Sparks** — a low-key button at the bottom of the home screen opens a parent tool: one open-ended "spark" question at a time ("What superpower would you pick?"). Tap **🔊 Listen** to have it read aloud, **Next ➜** (or the card) to advance. One shuffled deck of 60, no scoring.
 
 ## Difficulty scaling

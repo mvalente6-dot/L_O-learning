@@ -75,7 +75,7 @@ test('Lucas letters mix find, picture sounds, and big/little', () => {
   const sound = open(g, 'letters', 'complex', 'sound');
   assert.match(sound.say, /Which letter says/);
   assert.doesNotMatch(sound.say, /\b(I|Q|X),/);
-  assert.match(sound.stage, /🍎|⚽|🐱|🐶|🥚|🐟|🐐|🎩|🧃|🪁|🦁|🌙|👃|🐙|🐷|🐰|☀️|🐢|☂️|🎻|🐳|🪀|🦓/);
+  assert.match(sound.stage, /assets\/photos\/[a-z]+\.png/);
   const find = open(g, 'letters', 'complex', 'find');
   assert.match(find.say, /Find the letter [A-Z]\./);
   const cas = open(g, 'letters', 'complex', 'case');
@@ -116,6 +116,14 @@ test('Owen counts, finds numbers, and compares very different piles', () => {
   const nums = more.choices.map(c => (c.render.match(/<span>/g) || []).length);
   const gap = Math.abs(nums[0] - nums[1]);
   assert.ok(gap >= 2);
+});
+
+test('animals and dinosaurs use picture files', () => {
+  const g = fresh();
+  const animal = open(g, 'animals', 'simple', 'find');
+  animal.choices.forEach(c => assert.match(c.render, /assets\/photos\/[a-z]+\.png/));
+  const dino = open(g, 'dinos', 'complex', 'name');
+  dino.choices.forEach(c => assert.match(c.render, /assets\/dinos\/[a-z]+\.png/));
 });
 
 test('Owen hears who says this, Lucas gets farm and wild', () => {
@@ -315,8 +323,8 @@ test('Who left shows the empty spot, and never turns into colors', () => {
   assert.equal(round.stage.includes('who-gone'), true);
   const gone = round.choices.find(c => c.correct);
   const stayed = round.choices.find(c => !c.correct);
-  assert.equal(round.stage.includes(gone.emoji), false);
-  assert.equal(round.stage.includes(stayed.emoji), true);
+  assert.equal(round.stage.includes('photos/' + gone.aname + '.png'), false);
+  assert.equal(round.stage.includes('photos/' + stayed.aname + '.png'), true);
   const stars = g.play.state.stars;
   correctBtn(g).onclick();
   assert.equal(g.play.state.stars, stars + 1);
@@ -468,12 +476,13 @@ test('a newer line replaces one that was still waiting', () => {
     speak(u){ speaking = true; said.push(u.text); },
     getVoices(){ return []; },
   };
-  g.sandbox.speak('Look at them.');
-  assert.deepEqual(said, ['Look at them.']);
-  g.sandbox.speak('Who left?');
-  g.sandbox.speak('The dog left.');
+  g.sandbox.speak('Line with no recording one.');
+  assert.deepEqual(said, ['Line with no recording one.']);
+  g.sandbox.speak('Line with no recording two.');
+  g.sandbox.speak('Line with no recording three.');
   settle(g);
-  assert.deepEqual(said, ['Look at them.', 'The dog left.']);
+  assert.deepEqual(said, ['Line with no recording one.', 'Line with no recording three.']);
+  assert.match(g.html, /"Lets play and learn!":"assets\/voice\/[a-f0-9]+\.mp3"/);
 });
 
 test('Goodnight is a separate calm deck and stays quiet until Listen', () => {
