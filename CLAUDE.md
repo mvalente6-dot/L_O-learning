@@ -13,8 +13,9 @@ aloud); kids tap pictures, no reading required except the Letters category.
 
 ## The one file that matters
 
-Everything lives in **`Kids Learning Game - 2026-06-04.html`** (note the spaces
-and date in the filename). It is fully self-contained:
+Everything lives in **`index.html`**. The old dated filename,
+`Kids Learning Game - 2026-06-04.html`, only sends people to that page so
+saved links keep working. It is fully self-contained:
 
 - One `<style>` block (CSS), one `<script>` block (vanilla JS). No frameworks,
   no build step, no package manager, no external asset files.
