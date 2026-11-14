@@ -2346,9 +2346,19 @@ $('#startBtn').onclick = () => {
   // warm up speech + unlock recorded audio on iOS (must follow this gesture)
   speak('Lets play and learn!');
   unlockAudio();
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(()=>{});
   $('#start').classList.add('hidden');
 };
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  let hadWorker = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadWorker) { hadWorker = true; return; }
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+}
 
 loadSave();
 toggleBtns.forEach(x => x.classList.toggle('on', x.dataset.level === state.level));

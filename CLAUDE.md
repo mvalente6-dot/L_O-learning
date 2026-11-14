@@ -68,6 +68,6 @@ screen/flow you changed and assert on DOM text + check for console errors.
 
 - Work on a feature branch, push, open a PR, merge into `main` (don't commit
   straight to `main`).
-- `main` is what GitHub Pages publishes; after merging, Pages takes a few minutes
-  to redeploy and caches aggressively (use a `?v=N` query string to bust the
-  iOS/CDN cache when verifying on a phone).
+- `main` is what GitHub Pages publishes. The service worker asks for the newest
+  page whenever the phone is online, and uses the saved copy only if that fails.
+  Pages can take a few minutes to redeploy after a merge.
