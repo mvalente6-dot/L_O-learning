@@ -115,15 +115,29 @@
     padding-bottom:84px;
   }
   .cat{
-    border:none; border-radius:24px; color:#fff;
-    box-shadow:var(--shadow); cursor:pointer;
-    padding:20px 10px; display:flex; flex-direction:column;
-    align-items:center; gap:8px; font-family:inherit;
+    border:none; border-radius:22px; background:#fff; color:var(--ink);
+    box-shadow:var(--shadow); cursor:pointer; overflow:hidden;
+    padding:0; display:flex; flex-direction:column;
+    align-items:stretch; font-family:inherit; min-height:128px;
     transition:transform .08s;
   }
   .cat:active{transform:scale(.95);}
-  .cat .ico{font-size:46px; line-height:1;}
-  .cat .lbl{font-size:17px; font-weight:bold;}
+  .cat .ico{
+    flex:1 1 auto; min-height:74px; display:grid; place-items:center;
+    position:relative;
+  }
+  .cat .ico::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(180deg, rgba(255,255,255,.28), transparent 46%);
+  }
+  .cat .ico svg{width:78%; height:62px; display:block; position:relative; z-index:1;}
+  .cat .ico.drip{place-items:start stretch;}
+  .cat .ico.drip svg{width:100%; height:100%;}
+  .cat .lbl{
+    flex:0 0 auto; background:#fff; color:var(--ink);
+    font-size:17px; font-weight:bold; text-align:center;
+    padding:8px 8px 12px;
+  }
 
   /* ---------- Conversation Sparks entry (low-prominence, parent tool) ---------- */
   .sparks-entry{
@@ -1757,13 +1771,34 @@ function oddSize(bigIsOdd){
    SCREEN FLOW
    ========================================================================= */
 function allowed(c){ return !(c.lucasOnly && state.level === 'simple'); }   // hide 4.5-only cats for Owen
+/* Clay pictures for the home tiles, matching the soft-room set. */
+const HOME_ICONS = {
+  numbers:`<svg viewBox="0 0 132 72" aria-hidden="true"><text font-family="Trebuchet MS,sans-serif" font-size="52" font-weight="800"><tspan x="6" y="58" fill="#b91c1c">1</tspan><tspan x="48" y="58" fill="#c2410c">2</tspan><tspan x="90" y="58" fill="#a16207">3</tspan></text><text font-family="Trebuchet MS,sans-serif" font-size="52" font-weight="800"><tspan x="4" y="52" fill="#fecaca">1</tspan><tspan x="46" y="52" fill="#fdba74">2</tspan><tspan x="88" y="52" fill="#fde047">3</tspan></text></svg>`,
+  colors:`<svg viewBox="0 0 160 80" preserveAspectRatio="xMidYMin meet" aria-hidden="true"><g><rect x="18" y="0" width="16" height="34" fill="#5b21b6"/><circle cx="26" cy="34" r="12" fill="#5b21b6"/><rect x="20" y="0" width="12" height="32" fill="#c4b5fd"/><circle cx="26" cy="32" r="9" fill="#ddd6fe"/><rect x="52" y="0" width="16" height="40" fill="#166534"/><circle cx="60" cy="40" r="12" fill="#166534"/><rect x="54" y="0" width="12" height="38" fill="#86efac"/><circle cx="60" cy="38" r="9" fill="#bbf7d0"/><rect x="86" y="0" width="16" height="30" fill="#a16207"/><circle cx="94" cy="30" r="12" fill="#a16207"/><rect x="88" y="0" width="12" height="28" fill="#fde047"/><circle cx="94" cy="28" r="9" fill="#fef08a"/><rect x="120" y="0" width="16" height="36" fill="#9d174d"/><circle cx="128" cy="36" r="12" fill="#9d174d"/><rect x="122" y="0" width="12" height="34" fill="#f9a8d4"/><circle cx="128" cy="34" r="9" fill="#fbcfe8"/></g></svg>`,
+  shapes:`<svg viewBox="0 0 148 72" aria-hidden="true"><circle cx="30" cy="40" r="20" fill="#a16207"/><circle cx="28" cy="36" r="20" fill="#facc15"/><ellipse cx="20" cy="28" rx="7" ry="5" fill="#fff" opacity=".45"/><polygon points="78,16 100,58 56,58" fill="#1d4ed8"/><polygon points="74,14 96,54 52,54" fill="#60a5fa"/><rect x="108" y="22" width="32" height="32" rx="6" fill="#6b21a8"/><rect x="104" y="18" width="32" height="32" rx="6" fill="#d8b4fe"/></svg>`,
+  letters:`<svg viewBox="0 0 132 72" aria-hidden="true"><text font-family="Trebuchet MS,sans-serif" font-size="40" font-weight="800"><tspan x="4" y="54" fill="#a16207">A</tspan><tspan x="46" y="54" fill="#9d174d">B</tspan><tspan x="90" y="54" fill="#1e3a8a">C</tspan></text><text font-family="Trebuchet MS,sans-serif" font-size="40" font-weight="800"><tspan x="2" y="48" fill="#fde047">A</tspan><tspan x="44" y="48" fill="#fbcfe8">B</tspan><tspan x="88" y="48" fill="#bfdbfe">C</tspan></text></svg>`,
+  animals:`<svg viewBox="0 0 100 78" aria-hidden="true"><g fill="#000" opacity=".16" transform="translate(0 3)"><ellipse cx="22" cy="24" rx="9" ry="12" transform="rotate(-28 22 24)"/><ellipse cx="40" cy="14" rx="9" ry="12"/><ellipse cx="60" cy="14" rx="9" ry="12"/><ellipse cx="78" cy="24" rx="9" ry="12" transform="rotate(28 78 24)"/><ellipse cx="50" cy="50" rx="22" ry="16"/></g><g fill="#fff"><ellipse cx="22" cy="24" rx="9" ry="12" transform="rotate(-28 22 24)"/><ellipse cx="40" cy="14" rx="9" ry="12"/><ellipse cx="60" cy="14" rx="9" ry="12"/><ellipse cx="78" cy="24" rx="9" ry="12" transform="rotate(28 78 24)"/><ellipse cx="50" cy="50" rx="22" ry="16"/></g></svg>`,
+  dinos:`<svg viewBox="0 0 100 100" aria-hidden="true"><path fill="#fff" d="M50 94C30 94 16 82 22 68C10 58 8 40 20 30C26 34 30 46 36 56C34 36 40 16 50 8C60 16 66 36 64 56C70 46 74 34 80 30C92 40 90 58 78 68C84 82 70 94 50 94Z"/></svg>`,
+  patterns:`<svg viewBox="0 0 140 64" aria-hidden="true"><g fill="#000" opacity=".16" transform="translate(0 3)"><rect x="6" y="16" width="26" height="26" rx="7"/><rect x="40" y="16" width="26" height="26" rx="7"/><rect x="74" y="16" width="26" height="26" rx="7"/><rect x="108" y="16" width="26" height="26" rx="7"/></g><rect x="6" y="16" width="26" height="26" rx="7" fill="#fff"/><rect x="40" y="16" width="26" height="26" rx="7" fill="#fde047"/><rect x="74" y="16" width="26" height="26" rx="7" fill="#fff"/><rect x="108" y="16" width="26" height="26" rx="7" fill="#fde047"/></svg>`,
+  move:`<svg viewBox="0 0 120 72" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"><path d="M10 28h16M8 40h14M14 52h10"/></g><g fill="#fff"><circle cx="76" cy="14" r="8"/><path d="M70 22c-6 6-14 14-18 22 8-2 16-8 22-16 2-4 0-6-4-6z"/><path d="M66 28c-10-2-16 2-14 6 6 2 12 0 16-4z"/><path d="M72 26c10-4 18 2 16 8-6 2-12-2-16-6z"/><path d="M54 42c-8 8-16 16-22 20 4 4 10 2 16-6 4-6 8-12 6-14z"/><path d="M60 44c10 6 22 8 28 2 2 6-4 10-14 8-8-2-14-6-14-10z"/></g></svg>`,
+  silly:`<svg viewBox="0 0 120 72" aria-hidden="true"><circle cx="34" cy="30" r="11" fill="#f9a8d4"/><circle cx="26" cy="44" r="9" fill="#f472b6"/><ellipse cx="62" cy="42" rx="26" ry="20" fill="#000" opacity=".16" transform="translate(0 3)"/><ellipse cx="62" cy="42" rx="26" ry="20" fill="#fff"/><polygon points="58,8 68,30 50,30" fill="#fde047"/><polygon points="82,24 98,12 90,36" fill="#fff"/><circle cx="72" cy="40" r="3.2" fill="#3b2f2f"/><path d="M64 50 Q72 58 82 50" fill="none" stroke="#3b2f2f" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+  wholeft:`<svg viewBox="0 0 120 72" aria-hidden="true"><ellipse cx="36" cy="38" rx="22" ry="24" fill="#fff"/><ellipse cx="86" cy="38" rx="22" ry="24" fill="#fff"/><circle cx="40" cy="40" r="10" fill="#1e293b"/><circle cx="90" cy="40" r="10" fill="#1e293b"/><circle cx="44" cy="36" r="4" fill="#fff"/><circle cx="94" cy="36" r="4" fill="#fff"/></svg>`,
+  feelings:`<svg viewBox="0 0 100 72" aria-hidden="true"><circle cx="50" cy="38" r="26" fill="#f59e0b"/><circle cx="50" cy="36" r="26" fill="#fef3c7"/><circle cx="40" cy="30" r="3.5" fill="#3b2f2f"/><circle cx="60" cy="30" r="3.5" fill="#3b2f2f"/><path d="M38 42 Q50 56 62 42" fill="none" stroke="#3b2f2f" stroke-width="3.5" stroke-linecap="round"/></svg>`,
+  names:`<svg viewBox="0 0 120 72" aria-hidden="true"><g transform="rotate(-38 60 36)"><rect x="22" y="28" width="62" height="16" rx="3" fill="#fde047"/><polygon points="84,28 104,36 84,44" fill="#fdba74"/><rect x="14" y="28" width="12" height="16" fill="#f9a8d4"/><rect x="8" y="31" width="8" height="10" rx="1" fill="#e7e5e4"/></g></svg>`,
+  museum:`<svg viewBox="0 0 120 72" aria-hidden="true"><polygon points="60,6 108,30 12,30" fill="#fff"/><rect x="18" y="30" width="12" height="30" rx="2" fill="#fff"/><rect x="40" y="30" width="12" height="30" rx="2" fill="#fff"/><rect x="62" y="30" width="12" height="30" rx="2" fill="#fff"/><rect x="84" y="30" width="12" height="30" rx="2" fill="#fff"/><rect x="12" y="58" width="96" height="8" rx="2" fill="#fff"/></svg>`,
+  turns:`<svg viewBox="0 0 120 72" aria-hidden="true"><g fill="#fff"><circle cx="36" cy="18" r="10"/><path d="M18 64 Q18 34 36 34 Q54 34 54 64 Z"/><circle cx="84" cy="18" r="10"/><path d="M66 64 Q66 34 84 34 Q102 34 102 64 Z"/></g><path d="M50 44 H70" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>`,
+  rhymes:`<svg viewBox="0 0 120 72" aria-hidden="true"><g fill="#fff"><ellipse cx="34" cy="54" rx="12" ry="9"/><rect x="44" y="14" width="5" height="42" rx="1"/><ellipse cx="78" cy="50" rx="12" ry="9"/><rect x="88" y="10" width="5" height="42" rx="1"/><path d="M49 16 H93 V24 H49 Z"/></g></svg>`,
+  belong:`<svg viewBox="0 0 148 72" aria-hidden="true"><circle cx="24" cy="36" r="16" fill="#fff"/><circle cx="62" cy="36" r="16" fill="#fff"/><circle cx="100" cy="36" r="16" fill="#fff"/><polygon points="128,18 146,54 110,54" fill="#fde047"/></svg>`,
+  places:`<svg viewBox="0 0 120 72" aria-hidden="true"><polygon points="60,10 104,30 60,48 16,30" fill="#fff"/><polygon points="16,30 60,48 60,66 16,48" fill="#f5f5f4"/><polygon points="60,48 104,30 104,48 60,66" fill="#e7e5e4"/><polygon points="60,22 88,34 60,46 32,34" fill="#fff" opacity=".55"/></svg>`
+};
 function buildHome(){
   const grid = $('#catGrid'); grid.innerHTML = '';
   Object.entries(CATS).forEach(([id, c]) => {
     if (!allowed(c)) return;
     const b = document.createElement('button');
-    b.className = 'cat'; b.style.background = c.color;
-    b.innerHTML = `<span class="ico">${c.icon}</span><span class="lbl">${c.label}</span>`;
+    b.className = 'cat';
+    const drip = id === 'colors' ? ' drip' : '';
+    b.innerHTML = `<span class="ico${drip}" style="background:${c.color}">${HOME_ICONS[id]}</span><span class="lbl">${c.label}</span>`;
     b.onclick = () => openCategory(id);
     grid.appendChild(b);
   });
