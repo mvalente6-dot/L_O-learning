@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const GAME = path.join(__dirname, '..', 'Kids Learning Game - 2026-06-04.html');
+const GAME = path.join(__dirname, '..', 'index.html');
 
 function makeEl(tag){
   const el = {
@@ -79,7 +79,8 @@ function loadGame(opts){
   const storage = opts.storage || memoryStorage();
   const sandbox = {
     document,
-    location: { hash: '' },
+    location: { hash: '', protocol: 'file:' },
+    navigator: {},
     console,
     setTimeout: (fn, ms) => { sandbox._later.push({ fn, ms: ms || 0 }); return sandbox._later.length; },
     clearTimeout(){},

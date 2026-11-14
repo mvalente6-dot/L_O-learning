@@ -1,7 +1,7 @@
 const path = require('path');
 const { chromium } = require('playwright');
 
-const FILE = 'file://' + path.resolve(__dirname, '..', 'Kids Learning Game - 2026-06-04.html');
+const FILE = 'file://' + path.resolve(__dirname, '..', 'index.html');
 const NIGHT = [
   'Who gets a goodnight hug?',
   'What was a gentle part of today?',

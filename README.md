@@ -4,7 +4,26 @@ A single-file, offline HTML learning game for two young kids, built to scale wit
 
 ## Run it
 
-Open `Kids Learning Game - 2026-06-04.html` in any phone or desktop browser. The pictures and the recorded voice sit in the `assets` folder next to that file. Tap **Start** once to turn the sound on, then play. The first open of the published page needs internet. After that, it keeps working if the connection drops.
+On a phone or tablet, open:
+
+**https://mvalente6-dot.github.io/L_O-learning/**
+
+Tap **Start** once to turn the sound on, then play. The first open needs internet. After that, it keeps working if the connection drops.
+
+To play it from a folder on a computer, open `index.html`. The pictures and the recorded voice sit in the `assets` folder next to that file.
+
+## On an Amazon Fire tablet
+
+Type the address once in Silk (the tablet’s browser). Then tap the menu (three dots) and choose **Add to Home Screen**, and name it Play & Learn. It then opens like an app.
+
+For a child’s profile, the tablet will not open it until you allow the site:
+
+1. On the child’s profile, tap the grown-up menu (the profile picture) and enter your PIN.
+2. Open **Other Settings**, then **Manage Web Content**, then **Websites**.
+3. Tap **+**, paste `https://mvalente6-dot.github.io/L_O-learning/`, and tap **Allow**.
+4. Leave the browser on **Hand-Selected Websites** so only sites you allow are open.
+
+The child then finds Play & Learn in the kids browser. The same allow covers the whole address, so you do not add the long name.
 
 ## What it does
 
