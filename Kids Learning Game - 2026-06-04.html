@@ -8,21 +8,44 @@
 <title>Play & Learn</title>
 <style>
   :root{
-    --bg:#fff7ed;
+    --bg:#f7f3ec;
     --ink:#3b2f2f;
     --card:#ffffff;
-    --shadow:0 8px 0 rgba(0,0,0,.08), 0 12px 24px rgba(0,0,0,.12);
+    --shadow:0 8px 18px rgba(59,47,47,.14);
     --good:#22c55e;
     --bad:#f97316;
+    --floor:calc(clamp(72px, 11vh, 118px) + env(safe-area-inset-bottom, 0px));
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
-  html,body{margin:0;height:100%;}
+  html,body{margin:0;height:100%;min-height:100dvh;}
+  ::selection{background:#f3d7a4;color:var(--ink);}
+  :focus-visible{outline:3px solid #c4a574;outline-offset:3px;}
+  html{background:#e7cfaa;}
   body{
     font-family:'Trebuchet MS','Comic Sans MS',system-ui,sans-serif;
-    background:var(--bg);
     color:var(--ink);
     overflow:hidden;
     touch-action:manipulation;
+  }
+  /* Soft room: warm wall, window light from the left, pale wood floor. */
+  body, #start{
+    background-color:#e4c99a;
+    background-image:
+      radial-gradient(ellipse 82% 54% at -8% -6%, rgba(255,252,246,.94) 0%, rgba(255,243,214,.42) 38%, transparent 66%),
+      linear-gradient(112deg, rgba(255,255,255,.38) 0%, rgba(255,255,255,.05) 8%, transparent 15%),
+      linear-gradient(106deg, transparent 0 12%, rgba(186,150,104,.12) 14.5%, transparent 19% 30%, rgba(255,248,230,.2) 36%, transparent 44%),
+      repeating-linear-gradient(to bottom, transparent 0 15px, rgba(150,104,52,.07) 15px 16px),
+      linear-gradient(to bottom,
+        #f8f4ee 0%,
+        #f4ece2 52%,
+        #efe3d4 calc(100% - var(--floor)),
+        #f8f6f2 calc(100% - var(--floor)),
+        #f8f6f2 calc(100% - var(--floor) + 8px),
+        #f3e0be calc(100% - var(--floor) + 8px),
+        #e8d0a4 100%);
+    background-size:auto, auto, auto, 100% var(--floor), auto;
+    background-position:center, center, center, center bottom, center;
+    background-repeat:no-repeat;
   }
   #app{height:100dvh; display:flex; flex-direction:column;}
 
@@ -85,7 +108,7 @@
   .screen.active{opacity:1; pointer-events:auto;}
 
   /* ---------- Home ---------- */
-  #home{overflow-y:auto;}
+  #home{overflow-y:auto; scrollbar-width:thin; scrollbar-color:#e4d3b8 transparent;}
   .home-title{text-align:center; font-size:26px; font-weight:bold; margin:4px 0 12px;}
   .cat-grid{
     display:grid; grid-template-columns:1fr 1fr; gap:14px;
@@ -106,10 +129,10 @@
   .sparks-entry{
     align-self:center; margin:10px auto 4px;
     position:sticky; bottom:10px; z-index:5;   /* always reachable, even if the tiles overflow */
-    border:1.5px solid #d6d2cc; background:var(--bg);
+    border:1.5px solid #e4d8c8; background:#fffdf8;
     color:#8a8079; border-radius:16px;
     padding:8px 16px; font-size:13px; font-weight:bold;
-    font-family:inherit; cursor:pointer; opacity:.85;
+    font-family:inherit; cursor:pointer;
     display:inline-flex; align-items:center; gap:6px;
     transition:transform .08s, opacity .15s;
   }
@@ -260,7 +283,7 @@
 
   /* ---------- Start overlay ---------- */
   #start{
-    position:absolute; inset:0; z-index:20; background:var(--bg);
+    position:absolute; inset:0; z-index:20;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px;
   }
   #start h1{font-size:40px; margin:0; text-align:center;}
