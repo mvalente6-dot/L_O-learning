@@ -1,6 +1,7 @@
 {
   "models": ["gemini-3.1-flash-tts-preview", "gemini-2.5-flash-preview-tts"],
-  "voice": "",
+  "voice": "Sulafat",
+  "tempo": 1.25,
   "style": "Say this warmly and clearly, at a gentle, unhurried pace, the way a kind preschool teacher talks to a young child:",
   "sampleVoices": ["Sulafat", "Vindemiatrix", "Achernar", "Leda", "Achird"],
   "sampleLines": [

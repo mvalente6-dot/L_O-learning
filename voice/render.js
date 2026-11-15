@@ -84,7 +84,7 @@ function toMp3(audio, out){
   fs.writeFileSync(input, data);
   const rate = (/rate=(\d+)/i.exec(audio.mime) || [0, '24000'])[1];
   const inArgs = isWav ? ['-i', input] : ['-f', 's16le', '-ar', rate, '-ac', '1', '-i', input];
-  const trim = 'silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse,apad=pad_dur=0.12';
+  const trim = 'silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse,apad=pad_dur=0.12' + (CONFIG.tempo && CONFIG.tempo !== 1 ? `,atempo=${CONFIG.tempo}` : '');
   execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...inArgs, '-af', trim, '-ac', '1', '-codec:a', 'libmp3lame', '-b:a', '48k', out]);
   fs.rmSync(tmp, { recursive: true, force: true });
 }
