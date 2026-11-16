@@ -36,6 +36,18 @@ PICTURES = [
     ("W", "whale"), ("Y", "yo-yo"), ("Z", "zebra"),
 ]
 RHYMES = ["cat", "dog", "bee", "cake", "star", "box", "sock", "mouse"]
+RHYME_ROWS = [
+    ("cat", "hat", ["dog", "sun"]),
+    ("dog", "frog", ["hat", "cake"]),
+    ("bee", "tree", ["cat", "ball"]),
+    ("cake", "snake", ["pig", "star"]),
+    ("star", "car", ["duck", "fish"]),
+    ("box", "fox", ["moon", "boat"]),
+    ("sock", "clock", ["cup", "bird"]),
+    ("mouse", "house", ["frog", "apple"]),
+    ("goat", "boat", ["pig", "sun"]),
+    ("moon", "balloon", ["fish", "car"]),
+]
 DINO_CLUE = [
     "the one with a long neck",
     "the one with tiny arms",
@@ -238,6 +250,31 @@ def lines():
         add(f"Tap the {face} face.")
     for word in RHYMES:
         add(f"Which one rhymes with {word}?")
+    add("Who left?")
+    add("Stay on the gray line. Try again.")
+    for letter in LETTERS:
+        add(f"Find the big letter {letter}.")
+        add(f"Find the little letter {letter}.")
+        add(f"This is big letter {letter}. Find little letter {letter}.")
+        add(f"This is little letter {letter}. Find big letter {letter}.")
+        add(f"Trace the big letter {letter}.")
+        add(f"Trace the little letter {letter}.")
+    for n in range(0, 21):
+        add(f"Find the number {n}.")
+    for n in range(0, 10):
+        add(f"Trace the number {n}.")
+    for letter, word in PICTURES:
+        add(f"{cap(word)}. What letter does {word} start with?")
+        add(f"{cap(word)} starts with the letter {letter}.")
+        add(f"This is the letter {letter}. Which picture starts with its sound?")
+    for word, hit, misses in RHYME_ROWS:
+        add(f"Which one rhymes with {word}?")
+        add(f"{cap(word)}, {hit}.")
+        add(f"Do {word} and {hit} rhyme?")
+        add(f"Yes. {cap(word)}, {hit}. They rhyme.")
+        for miss in misses:
+            add(f"Do {word} and {miss} rhyme?")
+            add(f"No. {cap(word)}, {miss}. They do not rhyme.")
     # unique, stable order
     seen = set()
     unique = []

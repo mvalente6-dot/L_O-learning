@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
 const { loadGame, memoryStorage } = require('./load-game');
 
 function fresh(storage){
@@ -462,6 +463,38 @@ test('leaving during the cheer does not skip the next game', () => {
   settle(g);
   assert.match(g.play.state.current.say, /Reach up high/);
   assert.equal(g.play.state.step, 0);
+});
+
+test('school, tracing, and who-left use the recorded voice', () => {
+  const g = fresh();
+  const block = g.html.slice(g.html.indexOf('const VOICE_CLIPS'), g.html.indexOf('/* ---------- speech ---------- */'));
+  const pairs = [...block.matchAll(/"((?:\\.|[^"\\])*)":"(assets\/voice\/[a-f0-9]+\.mp3)"/g)];
+  const keys = new Set();
+  for (const [, raw, file] of pairs){
+    const line = JSON.parse('"' + raw + '"');
+    keys.add(line);
+    assert.ok(fs.statSync(file).size > 400, line);
+  }
+  const must = [
+    'Who left?',
+    'Stay on the gray line. Try again.',
+    'Find the number 0.',
+    'Find the number 20.',
+    'Trace the number 8.',
+    'Apple. What letter does apple start with?',
+    'This is the letter A. Which picture starts with its sound?',
+    'Do goat and boat rhyme?',
+    'Yes. Moon, balloon. They rhyme.',
+    'No. Cat, sun. They do not rhyme.'
+  ];
+  for (const L of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'){
+    must.push('Find the big letter ' + L + '.');
+    must.push('Find the little letter ' + L + '.');
+    must.push('Trace the big letter ' + L + '.');
+    must.push('Trace the little letter ' + L + '.');
+  }
+  for (const line of must) assert.ok(keys.has(line), line);
+  assert.match(g.html, /a\.error && a\.error\.code === 1/);
 });
 
 test('a newer line replaces one that was still waiting', () => {
