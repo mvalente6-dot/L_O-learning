@@ -10,6 +10,8 @@ On a phone or tablet, open:
 
 Tap **Start** once to turn the sound on, then play. The first open needs internet. After that, it keeps working if the connection drops.
 
+On an iPhone, open that address in Safari. Tap the Share button, then **Add to Home Screen**. Leave **Open as Web App** turned on, and tap Add. The game then fills the screen. If an older icon still shows Safari’s buttons, delete that icon and add it again the same way.
+
 To play it from a folder on a computer, open `index.html`. The pictures and the recorded voice sit in the `assets` folder next to that file.
 
 ## On an Amazon Fire tablet

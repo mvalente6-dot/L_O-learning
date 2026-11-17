@@ -3,7 +3,7 @@
   "short_name": "Play & Learn",
   "start_url": "./",
   "scope": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#f7f3ec",
   "theme_color": "#f7f3ec",
   "icons": [
