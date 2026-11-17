@@ -634,9 +634,9 @@ test('School tracing asks for a letter or number and judges coverage', () => {
   }
   const v = g.play.traceVerdict;
   assert.equal(v(90, 100, 5, 100), 'done');
-  assert.equal(v(62, 100, 40, 100), 'done');
+  assert.equal(v(80, 100, 5, 100), 'more');
   assert.equal(v(50, 100, 5, 100), 'more');
-  assert.equal(v(90, 100, 70, 100), 'messy');
+  assert.equal(v(90, 100, 60, 100), 'messy');
   assert.equal(v(30, 100, 2, 40), 'more');
   assert.equal(v(10, 100, 50, 60), 'messy');
   assert.equal(v(0, 0, 0, 0), 'more');
