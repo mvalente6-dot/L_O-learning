@@ -32,10 +32,16 @@ async function newestPage(request){
   bust.searchParams.set('fresh', String(Date.now()));
   try {
     const fresh = await fetch(bust.href, { cache: 'no-store' });
-    if (fresh.ok) await cache.put(savedUrl, fresh.clone());
-    if (fresh.ok || fresh.type === 'opaqueredirect') return fresh;
-    const saved = await cache.match(savedUrl);
-    return saved || fresh;
+    if (!fresh.ok) {
+      const saved = await cache.match(savedUrl);
+      return saved || fresh;
+    }
+    const headers = new Headers(fresh.headers);
+    headers.delete('content-encoding');
+    headers.delete('content-length');
+    const page = new Response(await fresh.blob(), { status: fresh.status, statusText: fresh.statusText, headers });
+    await cache.put(savedUrl, page.clone());
+    return page;
   } catch (e) {
     const saved = await cache.match(savedUrl);
     if (saved) return saved;
