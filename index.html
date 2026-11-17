@@ -2225,14 +2225,13 @@ function schoolRound(kind){
   }
   return traceRound();
 }
-const TRACE_DONE = 0.62, TRACE_STRAY = 0.5;
+const TRACE_DONE = 0.85, TRACE_MESSY = 0.4;
 function traceVerdict(covered, total, stray, drawn){
   if (!total) return 'more';
   const cov = covered / total;
   const off = drawn ? stray / drawn : 0;
-  if (cov >= TRACE_DONE && off <= TRACE_STRAY) return 'done';
-  if (off > TRACE_STRAY && drawn > 48) return 'messy';
-  return 'more';
+  if (cov >= TRACE_DONE) return off <= TRACE_MESSY ? 'done' : 'messy';
+  return off > TRACE_MESSY && drawn > 40 ? 'messy' : 'more';
 }
 function traceRound(){
   const r = rand(10);
@@ -2251,9 +2250,10 @@ function mountTrace(el, ch){
   const cv = el && el.querySelector && el.querySelector('canvas');
   if (!cv || !cv.getContext) return;
   const gen = roundGen;
-  const font = sz => `600 ${sz}px 'Edu QLD Beginner'`;
+  const font = sz => `500 ${sz}px 'Edu QLD Beginner'`;
   let w = 0, ctx = null, targets = [], hit = [], covered = 0, drawn = 0, stray = 0, last = null, busy = false, done = false;
-  const rad = () => Math.max(18, w * 0.085);
+  const pen = () => Math.max(16, w * 0.06);
+  const rad = () => pen() * 0.9;
   function layout(){
     w = Math.round(cv.getBoundingClientRect().width) || 320;
     const dpr = window.devicePixelRatio || 1;
@@ -2277,9 +2277,9 @@ function mountTrace(el, ch){
     ctx.beginPath(); ctx.moveTo(w * 0.06, p.base - p.xh); ctx.lineTo(w * 0.94, p.base - p.xh); ctx.stroke();
     ctx.restore();
     ctx.fillStyle = '#d6d3d1'; ctx.fillText(ch, p.x, p.base);
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#a855f7'; ctx.lineWidth = Math.max(14, w * 0.07);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#a855f7'; ctx.lineWidth = pen();
   }
-  function letterPixel(r, g, b, a){ return a > 120 && r > 150 && g > 140 && b < r + 18 && b > r - 45; }
+  function letterPixel(r, g, b, a){ return a > 170 && r > 160 && g > 150 && b < r + 18 && b > r - 40; }
   function mask(){
     guide();
     const dpr = window.devicePixelRatio || 1;
