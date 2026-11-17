@@ -2225,13 +2225,13 @@ function schoolRound(kind){
   }
   return traceRound();
 }
-const TRACE_DONE = 0.62, TRACE_STRAY = 0.45;
+const TRACE_DONE = 0.62, TRACE_STRAY = 0.5;
 function traceVerdict(covered, total, stray, drawn){
   if (!total) return 'more';
   const cov = covered / total;
   const off = drawn ? stray / drawn : 0;
   if (cov >= TRACE_DONE && off <= TRACE_STRAY) return 'done';
-  if (off > 0.55 && drawn > 48) return 'messy';
+  if (off > TRACE_STRAY && drawn > 48) return 'messy';
   return 'more';
 }
 function traceRound(){
@@ -2276,7 +2276,7 @@ function mountTrace(el, ch){
     ctx.setLineDash([10, 10]);
     ctx.beginPath(); ctx.moveTo(w * 0.06, p.base - p.xh); ctx.lineTo(w * 0.94, p.base - p.xh); ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = '#d6d3d1'; ctx.fillText(ch, p.x, p.base); ctx.fillText(ch, p.x, p.base);
+    ctx.fillStyle = '#d6d3d1'; ctx.fillText(ch, p.x, p.base);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#a855f7'; ctx.lineWidth = Math.max(14, w * 0.07);
   }
   function letterPixel(r, g, b, a){ return a > 120 && r > 150 && g > 140 && b < r + 18 && b > r - 45; }
@@ -2335,15 +2335,7 @@ function mountTrace(el, ch){
   cv.addEventListener('pointerup', up);
   cv.addEventListener('pointercancel', up);
   cv.addEventListener('lostpointercapture', up);
-  if (!window.PointerEvent){
-    const touchPt = e => e.changedTouches ? e.changedTouches[0] : e;
-    cv.addEventListener('touchstart', e => { e.preventDefault(); down(touchPt(e)); }, {passive:false});
-    cv.addEventListener('touchmove', e => { e.preventDefault(); move(touchPt(e)); }, {passive:false});
-    cv.addEventListener('touchend', e => { e.preventDefault(); up(); }, {passive:false});
-    cv.addEventListener('touchcancel', e => { e.preventDefault(); up(); }, {passive:false});
-  } else {
-    cv.addEventListener('touchmove', e => { if (e.cancelable) e.preventDefault(); }, {passive:false});
-  }
+  cv.addEventListener('touchmove', e => { if (e.cancelable) e.preventDefault(); }, {passive:false});
   const clear = el.querySelector('.trace-clear');
   if (clear) clear.onclick = () => { if (!done) reset(); };
   let tries = 0;
